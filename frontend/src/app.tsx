@@ -12,7 +12,7 @@ const App = () => {
       <CssBaseline />
       <Routes>
         <Route path="/" element={<ThemeDemo />} />
-        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/registration" element={<RegistrationPage />} />
       </Routes>
     </ThemeProvider>
   );
