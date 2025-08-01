@@ -1,8 +1,9 @@
 using Bogus;
 using Microsoft.EntityFrameworkCore;
+using SettlyModels;
 using SettlyModels.Entities;
 
-namespace SettlyModels;
+namespace SettlyDbManager;
 
 public class DataSeeder
 {
@@ -228,6 +229,8 @@ public class DataSeeder
 
         var housingMarketFaker = new Faker<HousingMarket>()
             .RuleFor(hm => hm.SuburbId, f => f.PickRandom(suburbIds))
+            .RuleFor(ps => ps.Population, f => f.Random.Int(5000, 150000))
+            .RuleFor(ps => ps.PopulationGrowthRate, f => f.Random.Decimal(-0.02m, 0.08m))
             .RuleFor(hm => hm.RentalYield, f => f.Random.Decimal(0.02m, 0.08m))
             .RuleFor(hm => hm.MedianPrice, f => f.Random.Int(400000, 1500000))
             .RuleFor(hm => hm.PriceGrowth3Yr, f => f.Random.Decimal(-0.05m, 0.15m))
@@ -266,10 +269,9 @@ public class DataSeeder
 
         var populationSupplyFaker = new Faker<PopulationSupply>()
             .RuleFor(ps => ps.SuburbId, f => f.PickRandom(suburbIds))
-            .RuleFor(ps => ps.Population, f => f.Random.Int(5000, 150000))
-            .RuleFor(ps => ps.PopulationGrowthRate, f => f.Random.Decimal(-0.02m, 0.08m))
+            .RuleFor(ps => ps.DevProjectsCount, f => f.Random.Int(0, 50))
+            .RuleFor(ps => ps.DemandSupplyRatio, f => f.Random.Decimal(0.5m, 2.0m))
             .RuleFor(ps => ps.RentersRatio, f => f.Random.Decimal(0.2m, 0.7m))
-            .RuleFor(ps => ps.LandSupply, f => f.PickRandom(landSupplyTypes))
             .RuleFor(ps => ps.BuildingApprovals12M, f => f.Random.Int(50, 2000))
             .RuleFor(ps => ps.SnapshotDate, f => f.Date.Between(DateTime.UtcNow.AddMonths(-12), DateTime.UtcNow));
 
@@ -284,8 +286,8 @@ public class DataSeeder
         var livabilityFaker = new Faker<Livability>()
             .RuleFor(l => l.SuburbId, f => f.PickRandom(suburbIds))
             .RuleFor(l => l.TransportScore, f => f.Random.Decimal(1.0m, 10.0m))
-            .RuleFor(l => l.DistSupermarket, f => f.Random.Decimal(0.5m, 15.0m))
-            .RuleFor(l => l.DistHospital, f => f.Random.Decimal(2.0m, 50.0m))
+            .RuleFor(l => l.SupermarketQuantity, f => f.Random.Int(2, 20))
+            .RuleFor(l => l.HospitalQuantity, f => f.Random.Int(1, 10))
             .RuleFor(l => l.PrimarySchoolRating, f => f.Random.Decimal(6.0m, 10.0m))
             .RuleFor(l => l.SecondarySchoolRating, f => f.Random.Decimal(6.0m, 10.0m))
             .RuleFor(l => l.HospitalDensity, f => f.Random.Decimal(0.1m, 5.0m))
@@ -302,7 +304,6 @@ public class DataSeeder
         var riskDevelopmentFaker = new Faker<RiskDevelopment>()
             .RuleFor(rd => rd.SuburbId, f => f.PickRandom(suburbIds))
             .RuleFor(rd => rd.CrimeRate, f => f.Random.Decimal(0.5m, 8.0m))
-            .RuleFor(rd => rd.DevProjectsCount, f => f.Random.Int(0, 50))
             .RuleFor(rd => rd.SnapshotDate, f => f.Date.Between(DateTime.UtcNow.AddMonths(-12), DateTime.UtcNow));
 
         var riskDevelopments = riskDevelopmentFaker.Generate(100);

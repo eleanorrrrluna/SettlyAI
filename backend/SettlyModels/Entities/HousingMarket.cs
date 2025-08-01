@@ -13,6 +13,8 @@ public class HousingMarket
     public int MedianRent { get; set; }
     public decimal RentGrowth12M { get; set; }
     public decimal VacancyRate { get; set; }
+    public int Population { get; set; }
+    public decimal PopulationGrowthRate { get; set; }
     public DateTime SnapshotDate { get; set; }
 
     public Suburb Suburb { get; set; } = null!;
