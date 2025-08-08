@@ -1,9 +1,10 @@
+using System.Text;
 using ISettlyService;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using SettlyModels;
 using SettlyService;
-using SettlyService.Mapping;
 
 
 namespace SettlyApi;
@@ -28,8 +29,27 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         builder.Services.AddScoped<ISuburbReportService, SuburbReportService>();
-
+        builder.Services.AddTransient<ICreateTokenService, CreateTokenService>();
+        builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddTransient<IPopulationSupplyService, PopulationSupplyService>();
+
+        // JWT configration
+        builder.Services.Configure<JWTConfig>(builder.Configuration.GetSection(JWTConfig.Section));
+        var jwtConfig = builder.Configuration.GetSection(JWTConfig.Section).Get<JWTConfig>();
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtConfig.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtConfig.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtConfig.SecretKey))
+                };
+            });
 
         var app = builder.Build();
 
