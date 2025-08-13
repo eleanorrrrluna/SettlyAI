@@ -6,18 +6,19 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
 
-<ItemGroup>
-  <ProjectReference Include="..\SettlyModels\SettlyModels.csproj" />
-  <ProjectReference Include="..\ISettlyService\ISettlyService.csproj" />
-</ItemGroup>
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
 
-<ItemGroup>
-  <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-  <PackageReference Include="AutoMapper" Version="12.0.1" />
-  <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
-</ItemGroup>
-   
-
+        <ProjectReference Include="..\ISettlyService\ISettlyService.csproj" />        
+        <ProjectReference Include="..\SettlyModels\SettlyModels.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
+    </ItemGroup>
 </Project>
+

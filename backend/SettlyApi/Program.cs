@@ -2,10 +2,9 @@ using System.Text;
 using ISettlyService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.DependencyInjection;
 using SettlyModels;
 using SettlyService;
-
 
 namespace SettlyApi;
 
@@ -25,13 +24,20 @@ public class Program
                 .EnableDetailedErrors()
         );
 
+
+        //Register ISearchApi with SearchApiService
+        builder.Services.AddScoped<ISettlyService.ISearchService, SettlyService.SearchService>();
+
         // Add services to the container.
         builder.Services.AddControllers();
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         builder.Services.AddScoped<ISuburbReportService, SuburbReportService>();
+        builder.Services.AddScoped<IPropertyDetailService, PropertyDetailService>();
+        builder.Services.AddScoped<IFavouriteService, FavouriteService>();
+        builder.Services.AddTransient<IPopulationSupplyService, PopulationSupplyService>();
         builder.Services.AddTransient<ICreateTokenService, CreateTokenService>();
         builder.Services.AddScoped<ILoginService, LoginService>();
-        builder.Services.AddTransient<IPopulationSupplyService, PopulationSupplyService>();
+
 
         // JWT configration
         builder.Services.Configure<JWTConfig>(builder.Configuration.GetSection(JWTConfig.Section));
@@ -54,6 +60,7 @@ public class Program
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
+        app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
 

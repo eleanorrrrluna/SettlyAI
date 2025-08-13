@@ -426,7 +426,11 @@ namespace SettlyModels.Migrations
                     b.Property<int>("CarSpaces")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Features")
+                    b.Property<string[]>("Features")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -445,6 +449,10 @@ namespace SettlyModels.Migrations
 
                     b.Property<int>("SuburbId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("YearBuilt")
                         .HasColumnType("integer");
