@@ -34,8 +34,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Start development server
-        run: pnpm run dev
+      # - name: Start development server
+      #   run: pnpm run dev
 
       - name: Build production version
         run: pnpm run build
