@@ -38,7 +38,7 @@ jobs:
       #   run: pnpm run dev
 
       - name: Build production version
-        run: pnpm run build
+        run: pnpm exec vite build
 
       - name: Run code linting
         run: pnpm run lint
