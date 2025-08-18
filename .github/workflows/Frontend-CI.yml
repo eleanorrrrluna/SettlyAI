@@ -2,7 +2,7 @@ name: Frontend CI
 
 on:
   push:
-    branches: [Eleanor/CI-#154]
+    # branches: [Eleanor/CI-#154]
     # paths:
     #   - 'frontend/**'
   pull_request:
