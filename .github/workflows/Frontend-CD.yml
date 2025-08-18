@@ -9,6 +9,10 @@ on:
     # paths:
     #   - 'frontend/**'
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
     AWS_S3_BUCKET: settlyai-frontend-eleanor-practice
     AWS_REGION: ap-southeast-2
@@ -17,7 +21,8 @@ env:
     AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
 jobs:
-  frontend-cicd:
+  frontend-cd:
+    name: Deploy Frontend to S3
     runs-on: ubuntu-latest
     defaults:
       run:

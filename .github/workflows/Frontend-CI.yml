@@ -1,0 +1,51 @@
+name: Frontend CI
+
+on:
+  push:
+    # branches: 
+    # paths:
+    #   - 'frontend/**'
+  pull_request:
+    # paths:
+    #   - 'frontend/**'
+
+jobs:
+  frontend-ci:
+    name: Test and Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # - name: Start development server
+      #   run: pnpm run dev
+
+      - name: Run code linting
+        run: pnpm run lint
+
+      - name: Format code
+        run: pnpm run format
+
+      # - name: Run Test
+      #   run: pnpm run test
+
+      - name: Build Frontend
+        run: pnpm exec vite build
