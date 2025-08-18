@@ -24,9 +24,9 @@ jobs:
   frontend-cd:
     name: Deploy Frontend to S3
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    # defaults:
+    #   run:
+    #     working-directory: frontend
 
     steps:
       - name: Checkout code
@@ -45,6 +45,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        working-directory: frontend
 
       # - name: Start development server
       #   run: pnpm run dev
@@ -60,6 +61,7 @@ jobs:
 
       - name: Build Frontend
         run: pnpm exec vite build
+        working-directory: frontend
 
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
