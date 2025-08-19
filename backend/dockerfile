@@ -2,6 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
+#告诉 ASP.NET Core 监听 0.0.0.0:80，接受容器外部请求
+ENV ASPNETCORE_URLS=http://+:80
+
 # 拷贝解决方案和项目文件
 COPY *.sln ./
 COPY SettlyApi/SettlyApi.csproj ./SettlyApi/
