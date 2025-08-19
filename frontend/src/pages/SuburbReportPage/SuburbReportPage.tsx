@@ -10,8 +10,9 @@ import { useEffect, useState } from 'react';
 import PropertyMarketInsightsSection from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
 import { mapPropertyCards } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
 import type { PropertyMetricItem } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection/components/PropertyMetricCard';
-import PropertyMetricCard from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection/components/PropertyMetricCard';
 import { getHousingMarket } from '@/api/suburbApi';
+import type { ISuburbReport } from '@/interfaces/suburbReport';
+import type { HousingMarketDto } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection/utils/mapPropertyCards';
 
 const PageContainer = styled(Box)(({ theme }) => ({
   maxWidth: '1440px',
@@ -33,7 +34,6 @@ const ContextContainer = styled(Box)(({ theme }) => ({
 }));
 
 const SuburbReportPage = () => {
-   
   const TITLES = {
     incomeEmployment: 'Income & Employment',
     propertyMarketInsights: 'Property Market Insghts',
@@ -42,6 +42,9 @@ const SuburbReportPage = () => {
     safetyScore: 'Safety & Score',
   };
   const [demandAndDevCards, setDemandAndDevCards] = useState<IMetricCardData[]>(
+    []
+  );
+  const [propertyMetrics, setPropertyMetrics] = useState<PropertyMetricItem[]>(
     []
   );
   // loading and errorMessage for page loading status
@@ -126,8 +129,9 @@ const SuburbReportPage = () => {
     if (!suburbId) return;
     const fetchPropertyMarketData = async () => {
       try {
-        const data = await getHousingMarket(Number(suburbId));
-        setPropertyMetrics(mapPropertyCards(data));
+        const data: ISuburbReport = await getHousingMarket(Number(suburbId));
+        const housingMarket = data.housingMarket as HousingMarketDto;
+        setPropertyMetrics(mapPropertyCards(housingMarket));
       } catch (error) {
         console.error('Error fetching housing market data:', error);
       }
@@ -158,7 +162,10 @@ const SuburbReportPage = () => {
           title={TITLES.demandDevelopment}
           data={demandAndDevCards}
         />
-        <PropertyMarketInsightsSection title={TITLES.propertyMarketInsights} />
+        <PropertyMarketInsightsSection
+          title={TITLES.propertyMarketInsights}
+          items={propertyMetrics}
+        />
         <MetricCardsSection
           title="Lifestyle Accessibility"
           data={metricCardsData}
