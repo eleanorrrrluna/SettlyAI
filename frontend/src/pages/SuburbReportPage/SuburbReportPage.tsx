@@ -4,9 +4,14 @@ import { Box, Button, styled, Typography } from '@mui/material';
 import MetricCardsSection from './components/MetricCardsSection';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { getDemandAndDev } from '@/api/suburbApi';
-import {mapDevCardData} from '@/pages/SuburbReportPage/components/MetricCardsSection/utils/MakeCards'
+import { mapDevCardData } from '@/pages/SuburbReportPage/components/MetricCardsSection/utils/MakeCards';
 import type { IMetricCardData } from './components/MetricCardsSection/MetricCardsSection';
 import { useEffect, useState } from 'react';
+import PropertyMarketInsightsSection from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
+import { mapPropertyCards } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
+import type { PropertyMetricItem } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection/components/PropertyMetricCard';
+import PropertyMetricCard from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection/components/PropertyMetricCard';
+import { getHousingMarket } from '@/api/suburbApi';
 
 const PageContainer = styled(Box)(({ theme }) => ({
   maxWidth: '1440px',
@@ -36,7 +41,9 @@ const SuburbReportPage = () => {
     lifeStyle: 'LifeStyle & Accessibility',
     safetyScore: 'Safety & Score',
   };
-  const [demandAndDevCards, setDemandAndDevCards] = useState<IMetricCardData[]>([]);
+  const [demandAndDevCards, setDemandAndDevCards] = useState<IMetricCardData[]>(
+    []
+  );
   // loading and errorMessage for page loading status
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -91,13 +98,13 @@ const SuburbReportPage = () => {
     },
   ];
 
-  // use useEffect for APi fetching test, this part will be replaced by useQueries later 
+  // use useEffect for APi fetching test, this part will be replaced by useQueries later
   useEffect(() => {
     setLoading(true);
     setErrorMessage(null);
     const suburbId = localStorage.getItem('suburbId');
     if (suburbId) {
-      const fetchDemandAndDevData = async() => {
+      const fetchDemandAndDevData = async () => {
         try {
           const data = await getDemandAndDev(parseInt(suburbId));
           setDemandAndDevCards(mapDevCardData(data));
@@ -107,12 +114,25 @@ const SuburbReportPage = () => {
         } finally {
           setLoading(false);
         }
-      }
+      };
       fetchDemandAndDevData();
     } else {
-      setErrorMessage("Cannot find the surbub Id")
+      setErrorMessage('Cannot find the surbub Id');
       setLoading(false);
     }
+  }, []);
+  useEffect(() => {
+    const suburbId = localStorage.getItem('suburbId');
+    if (!suburbId) return;
+    const fetchPropertyMarketData = async () => {
+      try {
+        const data = await getHousingMarket(Number(suburbId));
+        setPropertyMetrics(mapPropertyCards(data));
+      } catch (error) {
+        console.error('Error fetching housing market data:', error);
+      }
+    };
+    fetchPropertyMarketData();
   }, []);
   // 1. Loading state
   if (loading) {
@@ -121,7 +141,7 @@ const SuburbReportPage = () => {
 
   // 2. Error state
   if (errorMessage) {
-    return <p style={{ color: "red" }}>Error: {errorMessage}</p>;
+    return <p style={{ color: 'red' }}>Error: {errorMessage}</p>;
   }
 
   return (
@@ -135,9 +155,10 @@ const SuburbReportPage = () => {
       {/* todo: replace with real card content */}
       <ContextContainer>
         <MetricCardsSection
-            title={TITLES.demandDevelopment}
-            data={demandAndDevCards}
-        />        
+          title={TITLES.demandDevelopment}
+          data={demandAndDevCards}
+        />
+        <PropertyMarketInsightsSection title={TITLES.propertyMarketInsights} />
         <MetricCardsSection
           title="Lifestyle Accessibility"
           data={metricCardsData}
