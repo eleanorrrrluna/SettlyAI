@@ -5,7 +5,11 @@ WORKDIR /app
 # 拷贝解决方案和项目文件
 COPY *.sln ./
 COPY SettlyApi/SettlyApi.csproj ./SettlyApi/
+COPY ISettlyService/ISettlyService.csproj ./ISettlyService/
 COPY SettlyModels/SettlyModels.csproj ./SettlyModels/
+COPY SettlyService/SettlyService.csproj ./SettlyService/
+COPY SettlyDbManager/SettlyDbManager.csproj ./SettlyDbManager/
+COPY SettlyApiTests/SettlyApiTests.csproj ./SettlyApiTests/
 
 # 还原依赖
 RUN dotnet restore
