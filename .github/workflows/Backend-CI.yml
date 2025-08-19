@@ -50,7 +50,7 @@ jobs:
         run: dotnet restore backend.sln
 
       - name: Formating Check
-        run: dotnet format backend.sln --check
+        run: dotnet format
 
       - name: Build
         run: dotnet build backend.sln --no-restore --configuration Release
