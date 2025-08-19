@@ -7,7 +7,7 @@ import HomePage from '@/pages/HomePage/HomePage';
 import SuburbReportPage from './pages/SuburbReportPage';
 import Layout from './components/Layout/Layout';
 import './App.css';
-import { RegistrationPage } from './pages';
+import { RegistrationPage } from './pages/RegistrationPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
