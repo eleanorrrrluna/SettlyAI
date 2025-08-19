@@ -3,15 +3,15 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 # 拷贝解决方案和项目文件
-COPY backend/*.sln ./
-COPY backend/SettlyApi/SettlyApi.csproj ./SettlyApi/
-COPY backend/SettlyModels/SettlyModels.csproj ./SettlyModels/
+COPY *.sln ./
+COPY SettlyApi/SettlyApi.csproj ./SettlyApi/
+COPY SettlyModels/SettlyModels.csproj ./SettlyModels/
 
 # 还原依赖
 RUN dotnet restore
 
 # 拷贝所有源文件
-COPY backend/. .
+COPY . .
 
 # 编译发布
 RUN dotnet publish SettlyApi/SettlyApi.csproj -c Release -o /app/publish
