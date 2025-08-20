@@ -2,13 +2,11 @@ using System.Text;
 using ISettlyService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using SettlyModels;
+using Microsoft.OpenApi.Models;
 using SettlyApi.Configuration;
+using SettlyModels;
 using SettlyService;
-using System.Reflection;
-using Microsoft.AspNetCore.Builder;
 
 namespace SettlyApi;
 
@@ -35,7 +33,9 @@ public class Program
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IEmailSender, StubEmailSender>();
         builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
+        builder.Services.AddTransient<ICreateTokenService, CreateTokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 
 
@@ -49,8 +49,6 @@ public class Program
         builder.Services.AddScoped<IPropertyService, PropertyService>();
         builder.Services.AddScoped<IFavouriteService, FavouriteService>();
         builder.Services.AddTransient<IPopulationSupplyService, PopulationSupplyService>();
-        builder.Services.AddTransient<ICreateTokenService, CreateTokenService>();
-        builder.Services.AddScoped<ILoginService, LoginService>();
 
         //Add Swagger
         builder.Services.AddSwaggerGen(options =>
@@ -63,25 +61,38 @@ public class Program
                 Contact = new Microsoft.OpenApi.Models.OpenApiContact()
             });
             options.EnableAnnotations();
+
+            // Add JWT Authorization
+            options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme()
+            {
+                Description = "please 'Bearer+space+token'，For instance：Bearer eyJhbGciOi...",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                    {
+                        {
+
+                        new OpenApiSecurityScheme()
+                        {
+                            Reference=new OpenApiReference()
+                            {
+                                 Type=ReferenceType.SecurityScheme,
+                                 Id="Bearer"
+                            }
+                        },
+                        new List<string>()
+                          }
+                    });
         });
 
         // JWT configration
         builder.Services.Configure<JWTConfig>(builder.Configuration.GetSection(JWTConfig.Section));
         var jwtConfig = builder.Configuration.GetSection(JWTConfig.Section).Get<JWTConfig>();
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtConfig.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtConfig.Audience,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtConfig.SecretKey))
-                };
-            });
+        builder.Services.AddJWT(jwtConfig);
 
         var app = builder.Build();
         // use Swagger
@@ -97,6 +108,7 @@ public class Program
         // Configure the HTTP request pipeline.
         app.UseRouting();
         app.UseCors("AllowAll");
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
 
