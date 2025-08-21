@@ -43,6 +43,12 @@ jobs:
       - name: Debug - Print DB connection string
         run: echo "ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}"
 
+      - name: Debug - List files in SettlyApi
+        run: ls -la SettlyApi 
+
+      - name: Debug - Dump environment
+        run: printenv | grep Connection
+
       - name: Run EF Core Migrations
         run: |
           dotnet ef database update \
