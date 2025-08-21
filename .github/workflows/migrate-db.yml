@@ -1,11 +1,11 @@
 name: Run EF Core Migrations
 
 on:
-  workflow_dispatch:  # 手动触发
+  # workflow_dispatch:  # 手动触发
   push:
-    paths:
-      - 'backend/**/Migrations/*.cs'
-      - 'backend/**/SettlyDbContextFactory.cs'
+    # paths:
+    #   - 'backend/**/Migrations/*.cs'
+    #   - 'backend/**/SettlyDbContextFactory.cs'
 
 env:
   DOTNET_VERSION: '8.0.x'
