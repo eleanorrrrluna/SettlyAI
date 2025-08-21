@@ -1,0 +1,47 @@
+name: Run EF Core Migrations
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    paths:
+      - 'backend/**/Migrations/*.cs'
+      - 'backend/**/SettlyDbContextFactory.cs'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Restore and Build
+        run: |
+          dotnet restore backend.sln
+          dotnet build backend.sln --no-restore --configuration Release
+
+      - name: Run EF Core Migrations
+        run: |
+          dotnet ef database update \
+            --project SettlyApi/SettlyApi.csproj \
+            --startup-project SettlyApi/SettlyApi.csproj \
+            --configuration Release
+        env:
+          ConnectionStrings__DefaultConnection: ${{ secrets.RDS_CONNECTION_STRING }}
