@@ -21,8 +21,8 @@ pipeline {
             steps {
                 sh '''
                     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
-                    apt-get install -y nodejs
-                    npm install -g pnpm@${PNPM_VERSION}
+                    sudo apt-get install -y nodejs
+                    sudo npm install -g pnpm@${PNPM_VERSION}
                 '''
             }
         }
