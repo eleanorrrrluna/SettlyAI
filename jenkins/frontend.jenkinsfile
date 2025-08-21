@@ -20,9 +20,15 @@ pipeline {
         stage('Setup Node.js & pnpm') {
             steps {
                 sh '''
-                    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+                    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
                     sudo apt-get install -y nodejs
-                    sudo npm install -g pnpm@${PNPM_VERSION}
+                    curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+                    echo 'export PNPM_HOME="$HOME/.local/share/pnpm"' >> ~/.bashrc
+                    echo 'export PATH="$PNPM_HOME:$PATH"' >> ~/.bashrc
+                    source ~/.bashrc
+
+                    pnpm --version
                 '''
             }
         }
