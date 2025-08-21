@@ -43,6 +43,7 @@ public class Program
         builder.Services.AddScoped<ITestimonialService, TestimonialService>();
 
 
+        builder.Services.AddScoped<ILayoutNavService, LayoutNavService>();
         //Add Swagger
         builder.Services.AddSwaggerConfig();
 
