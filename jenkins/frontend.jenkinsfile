@@ -6,7 +6,6 @@ pipeline {
         AWS_REGION = 'ap-southeast-2'
         SOURCE_DIR = 'frontend/dist'
         CLOUDFRONT_DISTRIBUTION_ID = credentials('CLOUDFRONT_DISTRIBUTION_ID') // stored in Jenkins credentials
-        AWS_ROLE_ARN = credentials('AWS_ROLE_ARN') // stored in Jenkins credentials
         NODE_VERSION = '22'
         PNPM_VERSION = '9'
     }
@@ -69,20 +68,6 @@ pipeline {
             }
         }
 
-        stage('Assume AWS Role via OIDC') {
-            steps {
-                withCredentials([
-                    string(credentialsId: 'AWS_ROLE_ARN', variable: 'AWS_ROLE_ARN'),
-                    string(credentialsId: 'CLOUDFRONT_DISTRIBUTION_ID', variable: 'CLOUDFRONT_DISTRIBUTION_ID')
-                ]) {
-                    sh '''
-                        echo "Assuming role: $AWS_ROLE_ARN"
-                        # Use aws sts assume-role here if needed (Jenkins doesn’t do GitHub OIDC like GitHub Actions)
-                        # Alternatively, configure permanent credentials via Jenkins credentials or IAM Role for EC2 if running on EC2
-                    '''
-                }
-            }
-        }
 
         stage('Upload to S3') {
             steps {
