@@ -1,3 +1,5 @@
+using SettlyModels;
+
 public class SettlyDbContextFactory : IDesignTimeDbContextFactory<SettlyDbContext>
 {
     public SettlyDbContext CreateDbContext(string[] args)
@@ -5,13 +7,13 @@ public class SettlyDbContextFactory : IDesignTimeDbContextFactory<SettlyDbContex
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
         var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory()) // 👈 关键：指定 base path
+            .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: true)
             .AddJsonFile($"appsettings.{environment}.json", optional: true)
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = config["ConnectionStrings:DefaultConnection"]; // 注意这里是冒号
+        var connectionString = config["ConnectionStrings:DefaultConnection"];
         if (string.IsNullOrEmpty(connectionString))
             throw new InvalidOperationException("Missing ConnectionStrings:DefaultConnection");
 
