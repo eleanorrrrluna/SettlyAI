@@ -5,7 +5,7 @@ pipeline {
         AWS_S3_BUCKET = 'settlyai-frontend-eleanor-practice'
         AWS_REGION = 'ap-southeast-2'
         SOURCE_DIR = 'frontend/dist'
-        CLOUDFRONT_DISTRIBUTION_ID = credentials('CLOUDFRONT_DISTRIBUTION_ID') // stored in Jenkins credentials
+        CLOUDFRONT_DISTRIBUTION_ID = credentials('CLOUDFRONT_DISTRIBUTION_ID')
         NODE_VERSION = '22'
         PNPM_VERSION = '9'
     }
@@ -19,10 +19,12 @@ pipeline {
 
         stage('Setup Node.js & pnpm') {
             steps {
-                sh '''
-                    pnpm --version
-                    pnpm install
-                '''
+                dir('frontend') {
+                    sh '''
+                        pnpm --version
+                        pnpm install
+                    '''
+                }
             }
         }
 
@@ -66,7 +68,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Upload to S3') {
             steps {
