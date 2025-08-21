@@ -20,8 +20,6 @@ pipeline {
         stage('Setup Node.js & pnpm') {
             steps {
                 sh '''
-                    export PNPM_HOME="$HOME/.local/share/pnpm"
-                    export PATH="$PNPM_HOME:$PATH"
                     pnpm --version
                     pnpm install
                 '''
