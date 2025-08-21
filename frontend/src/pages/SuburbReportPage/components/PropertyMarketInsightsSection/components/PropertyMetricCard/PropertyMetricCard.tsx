@@ -20,7 +20,7 @@ const PropertyMetricCard = ({
       ? 'success.main'
       : trend === 'down'
         ? 'error.main'
-        : 'text.secondary; ';
+        : 'text.secondary';
   return (
     <Card variant="outlined" sx={{ height: '100%', borderRadius: 2 }}>
       <CardContent
