@@ -1,10 +1,12 @@
+
 using ISettlyService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SettlyModels;
+using SettlyApi.Configuration;
 using SettlyService;
-using SettlyService.Mapping;
-
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 
 namespace SettlyApi;
 
@@ -24,16 +26,55 @@ public class Program
                 .EnableDetailedErrors()
         );
 
+        // Add CORS services
+        builder.Services.AddCorsPolicies();
+
+        // Add application services
+        builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IEmailSender, StubEmailSender>();
+        builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+
+
+
+        //Register ISearchApi with SearchApiService
+        builder.Services.AddScoped<ISettlyService.ISearchService, SettlyService.SearchService>();
+
         // Add services to the container.
         builder.Services.AddControllers();
         builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-        builder.Services.AddScoped<ISuburbReportService, SuburbReportService>();
-
+        builder.Services.AddScoped<ISuburbService, SuburbService>();
+        builder.Services.AddScoped<IPropertyService, PropertyService>();
+        builder.Services.AddScoped<IFavouriteService, FavouriteService>();
         builder.Services.AddTransient<IPopulationSupplyService, PopulationSupplyService>();
 
+        //Add Swagger
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("SettlyService", new Microsoft.OpenApi.Models.OpenApiInfo()
+            {
+                Title = "SettlyAI",
+                Version = "1.0.0.0",
+                Description = "SettlyAI Web Api",
+                Contact = new Microsoft.OpenApi.Models.OpenApiContact()
+            });
+            options.EnableAnnotations();
+        });
+
         var app = builder.Build();
+        // use Swagger
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(option =>
+            {
+                option.SwaggerEndpoint($"/swagger/SettlyService/swagger.json", "SettlyService");
+            });
+        }
 
         // Configure the HTTP request pipeline.
+        app.UseRouting();
+        app.UseCors("AllowAll");
         app.UseAuthorization();
         app.MapControllers();
 
