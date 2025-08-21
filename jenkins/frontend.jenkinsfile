@@ -1,0 +1,105 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_S3_BUCKET = 'settlyai-frontend-eleanor-practice'
+        AWS_REGION = 'ap-southeast-2'
+        SOURCE_DIR = 'frontend/dist'
+        CLOUDFRONT_DISTRIBUTION_ID = credentials('CLOUDFRONT_DISTRIBUTION_ID') // stored in Jenkins credentials
+        AWS_ROLE_ARN = credentials('AWS_ROLE_ARN') // stored in Jenkins credentials
+        NODE_VERSION = '22'
+        PNPM_VERSION = '9'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup Node.js & pnpm') {
+            steps {
+                sh '''
+                    curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
+                    apt-get install -y nodejs
+                    npm install -g pnpm@${PNPM_VERSION}
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('frontend') {
+                    sh 'pnpm install --frozen-lockfile'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('frontend') {
+                    sh 'pnpm run lint'
+                }
+            }
+        }
+
+        stage('Format') {
+            steps {
+                dir('frontend') {
+                    sh 'pnpm run format'
+                }
+            }
+        }
+
+        // Uncomment this if you want to run tests
+        // stage('Test') {
+        //     steps {
+        //         dir('frontend') {
+        //             sh 'pnpm run test'
+        //         }
+        //     }
+        // }
+
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'pnpm exec vite build'
+                }
+            }
+        }
+
+        stage('Assume AWS Role via OIDC') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ROLE_ARN', variable: 'AWS_ROLE_ARN'),
+                    string(credentialsId: 'CLOUDFRONT_DISTRIBUTION_ID', variable: 'CLOUDFRONT_DISTRIBUTION_ID')
+                ]) {
+                    sh '''
+                        echo "Assuming role: $AWS_ROLE_ARN"
+                        # Use aws sts assume-role here if needed (Jenkins doesn’t do GitHub OIDC like GitHub Actions)
+                        # Alternatively, configure permanent credentials via Jenkins credentials or IAM Role for EC2 if running on EC2
+                    '''
+                }
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                sh '''
+                    aws s3 sync frontend/dist s3://${AWS_S3_BUCKET} --delete
+                '''
+            }
+        }
+
+        stage('Invalidate CloudFront') {
+            steps {
+                sh '''
+                    aws cloudfront create-invalidation \
+                      --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+                      --paths "/*"
+                '''
+            }
+        }
+    }
+}
