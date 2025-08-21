@@ -1,8 +1,6 @@
-using System.Text;
+using System.Threading.RateLimiting;
 using ISettlyService;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SettlyApi.Configuration;
 using SettlyModels;
@@ -71,28 +69,47 @@ public class Program
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer"
             });
-
             options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+            {
+                {
+                    new OpenApiSecurityScheme()
                     {
+                        Reference=new OpenApiReference()
                         {
-
-                        new OpenApiSecurityScheme()
-                        {
-                            Reference=new OpenApiReference()
-                            {
-                                 Type=ReferenceType.SecurityScheme,
-                                 Id="Bearer"
-                            }
-                        },
-                        new List<string>()
-                          }
-                    });
+                            Type=ReferenceType.SecurityScheme,
+                            Id="Bearer"
+                        }
+                    },
+                    new List<string>()
+                }
+            });
         });
 
         // JWT configration
         builder.Services.Configure<JWTConfig>(builder.Configuration.GetSection(JWTConfig.Section));
         var jwtConfig = builder.Configuration.GetSection(JWTConfig.Section).Get<JWTConfig>();
         builder.Services.AddJWT(jwtConfig);
+
+        // Add a rate-limiter policy: 5 requests per 15 minutes per client IP
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddPolicy("LoginIpFixedWindow", httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: ip,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,                       // <= 5 attempts ...
+                        Window = TimeSpan.FromMinutes(15),     // ... every 15 minutes
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0                         // don't queue, just reject
+                    });
+            });
+        });
 
         var app = builder.Build();
         // use Swagger
@@ -108,6 +125,7 @@ public class Program
         // Configure the HTTP request pipeline.
         app.UseRouting();
         app.UseCors("AllowAll");
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
