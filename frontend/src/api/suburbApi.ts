@@ -1,6 +1,7 @@
 import type { ILivability, ISuburbReport } from '@/interfaces/suburbReport';
 import httpClient from './httpClient';
 import type { IDemandAndDev } from '@/interfaces/DemandAndDev';
+import type { IHousingMarket } from '@/interfaces/housingmarket';
 
 // Get suburb report by suburb ID
 export const getSuburbReport = async (
@@ -31,9 +32,9 @@ export const getDemandAndDev = async (
 // Get Housing Market data by suburb ID
 export const getHousingMarket = async (
   suburbId: number
-): Promise<ISuburbReport> => {
-  const response = await httpClient.get<ISuburbReport>(
-    `/housingMarket/${suburbId}`
+): Promise<IHousingMarket> => {
+  const response = await httpClient.get<IHousingMarket>(
+    `/suburb/${suburbId}/housingmarket`
   );
   return response.data;
 };

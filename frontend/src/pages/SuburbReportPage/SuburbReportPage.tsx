@@ -4,12 +4,15 @@ import MetricCardsSection from './components/MetricCardsSection';
 import { useQueries } from '@tanstack/react-query';
 import { getSuburbLivability } from '@/api/suburbApi';
 import { Navigate, useParams } from 'react-router-dom';
-import { getDemandAndDev } from '@/api/suburbApi';
+import { getDemandAndDev, getHousingMarket } from '@/api/suburbApi';
 import {
   mapDevCardData,
   mapLivability,
 } from './components/MetricCardsSection/utils/dataMapper';
 import Banner from './components/Banner';
+import { mapPropertyCards } from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
+import PropertyMarketInsightsSection from '@/pages/SuburbReportPage/components/PropertyMarketInsightsSection';
+import type { IHousingMarket } from '@/interfaces/housingmarket';
 
 const PageContainer = styled(Box)(({ theme }) => ({
   maxWidth: '1440px',
@@ -55,6 +58,10 @@ const SuburbReportPage = () => {
         queryKey: ['livability', suburbId],
         queryFn: () => getSuburbLivability(suburbId),
       },
+      {
+        queryKey: ['housingMarket', suburbId],
+        queryFn: () => getHousingMarket(Number(suburbId)),
+      },
     ],
   });
 
@@ -84,6 +91,10 @@ const SuburbReportPage = () => {
     livability: results[1].data ? mapLivability(results[1].data) : undefined,
   };
 
+  const propertyMetrics = results[2]?.data
+    ? mapPropertyCards(results[2].data as IHousingMarket)
+    : [];
+
   return (
     <PageContainer>
       <Banner suburb="Point Cook" postcode="3030" state="VIC" />
@@ -109,6 +120,11 @@ const SuburbReportPage = () => {
             <MetricCardsSection
               title={TITLES.lifeStyle}
               data={formattedData.livability}
+            />
+
+            <PropertyMarketInsightsSection
+              title={TITLES.propertyMarketInsights}
+              items={propertyMetrics}
             />
 
             {/* todo:  replace with real action buttons , feel free to modify*/}
