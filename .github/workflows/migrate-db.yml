@@ -40,14 +40,14 @@ jobs:
           dotnet restore backend.sln
           dotnet build backend.sln --no-restore --configuration Release
 
-      # - name: Debug - Print DB connection string
-      #   run: echo "ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}"
+      - name: Debug - Print DB connection string
+        run: echo "ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}"
 
-      # - name: Debug - List files in SettlyApi
-      #   run: ls -la SettlyApi 
+      - name: Debug - List files in SettlyApi
+        run: ls -la SettlyApi 
 
-      # - name: Debug - Dump environment
-      #   run: printenv | grep Connection
+      - name: Debug - Dump environment
+        run: printenv | grep Connection
 
       - name: Run EF Core Migrations
         run: |

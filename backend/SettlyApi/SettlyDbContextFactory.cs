@@ -1,30 +1,27 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
-using SettlyModels;
-
-namespace SettlyApi
+public class SettlyDbContextFactory : IDesignTimeDbContextFactory<SettlyDbContext>
 {
-    public class SettlyDbContextFactory : IDesignTimeDbContextFactory<SettlyDbContext>
+    public SettlyDbContext CreateDbContext(string[] args)
     {
-        public SettlyDbContext CreateDbContext(string[] args)
-        {
-            var config = new ConfigurationBuilder()
-                .AddEnvironmentVariables()
-                .Build();
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-            var connectionString = config["ConnectionStrings__DefaultConnection"];
-            if (string.IsNullOrEmpty(connectionString))
-                throw new InvalidOperationException("Missing environment variable: ConnectionStrings__DefaultConnection");
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory()) // 👈 关键：指定 base path
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
 
-            var optionsBuilder = new DbContextOptionsBuilder<SettlyDbContext>();
-            optionsBuilder
-                .UseNpgsql(connectionString)
-                .EnableSensitiveDataLogging()
-                .EnableDetailedErrors()
-                .LogTo(Console.WriteLine);
+        var connectionString = config["ConnectionStrings:DefaultConnection"]; // 注意这里是冒号
+        if (string.IsNullOrEmpty(connectionString))
+            throw new InvalidOperationException("Missing ConnectionStrings:DefaultConnection");
 
-            return new SettlyDbContext(optionsBuilder.Options);
-        }
+        var optionsBuilder = new DbContextOptionsBuilder<SettlyDbContext>();
+        optionsBuilder
+            .UseNpgsql(connectionString)
+            .EnableSensitiveDataLogging()
+            .EnableDetailedErrors()
+            .LogTo(Console.WriteLine);
+
+        return new SettlyDbContext(optionsBuilder.Options);
     }
 }
