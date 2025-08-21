@@ -4,6 +4,10 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 using SettlyModels;
+using ISettlyService;
+using Microsoft.Extensions.DependencyInjection;
+using SettlyApi.Configuration;
+using SettlyService;
 
 public class SettlyDbContextFactory : IDesignTimeDbContextFactory<SettlyDbContext>
 {
