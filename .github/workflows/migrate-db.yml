@@ -37,8 +37,8 @@ jobs:
           dotnet restore backend.sln
           dotnet build backend.sln --no-restore --configuration Release
 
-      - name: Debug: Print DB connection string
-        run: echo 'ConnectionStrings__DefaultConnection=$ConnectionStrings__DefaultConnection'
+      - name: Debug - Print DB connection string
+        run: echo "ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}"
         env:
           ConnectionStrings__DefaultConnection: ${{ secrets.RDS_CONNECTION_STRING }}
 
