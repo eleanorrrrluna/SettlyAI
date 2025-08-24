@@ -69,7 +69,7 @@ jobs:
           key: ${{ secrets.EC2_KEY_PAIR }}
           source: "./"             # 以“backend/”为工作目录，整个 backend 目录会上传
           target: "/srv/settly"
-          rm: true                 # 先清空目标目录，避免老文件干扰
+          rm: false                 # 设为 false 保留旧文件
           overwrite: true
           strip_components: 0
         # 如你的 EC2 用户不是 ec2-user，或路径不同，请相应调整
