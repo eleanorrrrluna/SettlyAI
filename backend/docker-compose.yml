@@ -1,70 +1,54 @@
 version: '3.8'
-# Usage: to start only the database service for local development
-# Run: docker-compose up -d db
-
 services:
-  db:
+  postgres:
     image: postgres:15
-    container_name: settly_postgres
+    container_name: postgres_db
     environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: settly
-      POSTGRES_USER: your_username
-      POSTGRES_PASSWORD: your_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - settly_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d settly"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
 
-  migrator:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
-    container_name: settly_migrator
-    depends_on:
-      - db
-    working_dir: /app/SettlyModels
-    volumes:
-      - .:/app
+  db-migrate:
+    build: .
     environment:
-      ASPNETCORE_ENVIRONMENT: Development 
-    command: >
-      sh -c "
-      dotnet tool install --global dotnet-ef &&
-      export PATH=\"$PATH:/root/.dotnet/tools\" &&
-      dotnet ef database update --startup-project ../SettlyApi
-      "
-    networks:
-      - settly_network
+      - ApiConfigs__DBConnection=Host=postgres;Port=5432;Database=settly;User Id=postgres;Password=password;Include Error Detail=true
+    depends_on:
+      postgres:
+          condition: service_healthy
+    command: bash -c "sleep 10 && cd /app/SettlyModels && dotnet ef database update --startup-project ../SettlyApi"
+    restart: "no"
 
-  settlyapi:
-    build:
-      context: .
-      dockerfile: SettlyApi/Dockerfile
+  db-seed:
+    build: .
+    environment:
+      - ApiConfigs__DBConnection=Host=postgres;Port=5432;Database=settly;User Id=postgres;Password=password;Include Error Detail=true
+    depends_on:
+      postgres:
+          condition: service_healthy
+      db-migrate:
+          condition: service_completed_successfully
+    command: bash -c "cd /app/SettlyDbManager && ASPNETCORE_ENVIRONMENT=Development dotnet run -- --seed"
+    restart: "no"
+  api:
+    build: .
     ports:
       - "5100:5100"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-    networks:
-      - settly_network
+      - ApiConfigs__DBConnection=Host=postgres;Port=5432;Database=settly;User Id=postgres;Password=password;Include Error Detail=true
+      - ASPNETCORE_URLS=http://0.0.0.0:5100
+      - ASPNETCORE_HTTP_PORTS=5100
+      - DOTNET_URLS=http://0.0.0.0:5100
     depends_on:
-      - db
-
-  dbmanager:
-    build:
-      context: .
-      dockerfile: SettlyDbManager/Dockerfile
-    container_name: settly_dbmanager
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-    depends_on:
-      - db
-      - migrator
-    networks:
-      - settly_network
-    command: dotnet run -- --seed
-
+      postgres:
+        condition: service_healthy
 volumes:
   postgres_data:
-
-networks:
-  settly_network:
