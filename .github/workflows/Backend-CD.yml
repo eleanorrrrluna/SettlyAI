@@ -83,27 +83,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 在 EC2 上通过 SSM 执行迁移
-          CMD="export ApiConfigs__DBConnection=\"$RDS_CONN\"; \
-              export ASPNETCORE_ENVIRONMENT=Production; \
-              docker pull mcr.microsoft.com/dotnet/sdk:8.0; \
-              docker run --rm \
-                -e ApiConfigs__DBConnection=\"$RDS_CONN\" \
-                -e ASPNETCORE_ENVIRONMENT=Production \
-                -v /srv/settly:/src \
-                mcr.microsoft.com/dotnet/sdk:8.0 \
-                bash -lc 'dotnet tool install -g dotnet-ef --version 8.0.7; \
-                          export PATH=\$PATH:/root/.dotnet/tools; \
-                          cd /src/SettlyModels; \
-                          dotnet ef database update --startup-project ../SettlyApi'"
+          # 1) 生成 SSM 命令参数的 JSON 文件（注意这里用单引号，避免变量被提前展开）
+          cat >/tmp/ssm-params.json <<'JSON'
+          {
+            "commands": [
+              "set -euo pipefail",
+              "export ASPNETCORE_ENVIRONMENT=Production",
+              "export ApiConfigs__DBConnection={{RDS_CONN}}",
+              "docker pull mcr.microsoft.com/dotnet/sdk:8.0",
+              "docker run --rm -e ApiConfigs__DBConnection=\"$ApiConfigs__DBConnection\" -e ASPNETCORE_ENVIRONMENT=Production -v /srv/settly:/src mcr.microsoft.com/dotnet/sdk:8.0 bash -lc 'dotnet tool install -g dotnet-ef --version 8.0.7; export PATH=$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi'"
+            ]
+          }
+          JSON
 
-          # 发送 SSM 命令
-          aws ssm send-command \
+          # 2) 把占位符替换成你的连接串（注意这里假设连接串不包含双引号）
+          sed -i "s|{{RDS_CONN}}|$RDS_CONN|g" /tmp/ssm-params.json
+
+          # 3) 发送 SSM 命令（用 file:// 传 JSON，避免转义问题）
+          RESP=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceIds,Values=$EC2_INSTANCE_ID" \
-            --parameters "commands=$CMD" \
-            --comment "Run EF Core migrations" \
-            --region "$AWS_REGION"
+            --parameters file:///tmp/ssm-params.json \
+            --comment "Run EF Core migrations (CD Pre-deploy via SSM)" \
+            --region "$AWS_REGION")
+
+          CID=$(echo "$RESP" | jq -r '.Command.CommandId')
+          echo "SSM CommandId: $CID"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
