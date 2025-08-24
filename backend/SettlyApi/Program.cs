@@ -1,4 +1,3 @@
-using System.Threading.RateLimiting;
 using ISettlyService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -90,26 +89,8 @@ public class Program
         var jwtConfig = builder.Configuration.GetSection(JWTConfig.Section).Get<JWTConfig>();
         builder.Services.AddJWT(jwtConfig);
 
-        // Add a rate-limiter policy: 5 requests per 15 minutes per client IP
-        builder.Services.AddRateLimiter(options =>
-        {
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-            options.AddPolicy("LoginIpFixedWindow", httpContext =>
-            {
-                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-                return RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: ip,
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = 5,                       // <= 5 attempts ...
-                        Window = TimeSpan.FromMinutes(15),     // ... every 15 minutes
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                        QueueLimit = 0                         // don't queue, just reject
-                    });
-            });
-        });
+        // Add a Login rate-limiter policy: 5 requests per 15 minutes per client IP
+        builder.Services.AddLoginLimitRater(attempts: 5, miniutes: 15);
 
         var app = builder.Build();
         // use Swagger
