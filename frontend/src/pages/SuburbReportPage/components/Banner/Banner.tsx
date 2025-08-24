@@ -1,7 +1,7 @@
 import { Box, Typography, styled } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import GlobalButton from '@/components/Button/GlobalButton';
+import GlobalButton from '@/components/GlobalButton';
 import street from './assets/street.jpg';
 
 const BannerContainer = styled(Box)(({ theme }) => ({
@@ -51,7 +51,7 @@ const Subtitle = styled(Typography)(({ theme }) => ({
     fontSize: theme.typography.subtitle1.fontSize,
   },
   [theme.breakpoints.down('sm')]: {
-    fontSize: theme.typography.p1.fontSize,
+    fontSize: theme.typography.p1,
   },
 }));
 
