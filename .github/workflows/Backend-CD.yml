@@ -60,43 +60,55 @@ jobs:
           docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
           docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-      - name: Apply EF Core migrations (Pre-deploy)
+      # === 新增：把 backend 源码同步到 EC2 的 /srv/settly（给 SSM 里 dotnet ef 使用）===
+      - name: Sync backend source to EC2 (/srv/settly)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY_PAIR }}
+          source: "./"             # 以“backend/”为工作目录，整个 backend 目录会上传
+          target: "/srv/settly"
+          rm: true                 # 先清空目标目录，避免老文件干扰
+          overwrite: true
+          strip_components: 0
+        # 如你的 EC2 用户不是 ec2-user，或路径不同，请相应调整
+
+      # === 新增：用 SSM 在 EC2 内执行迁移（Pre-deploy）===
+      - name: Apply EF Core migrations via SSM (Pre-deploy)
         env:
+          AWS_REGION: ${{ env.AWS_REGION }}
           RDS_CONN: ${{ secrets.RDS_CONNECTION_STRING }}
-          ASPNETCORE_ENVIRONMENT: Production
+          EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: |
-          docker run --rm --pull=always \
-            -e "ApiConfigs__DBConnection=$RDS_CONN" \
-            -e "ASPNETCORE_ENVIRONMENT=Production" \
-            -v "$PWD":/src \
-            mcr.microsoft.com/dotnet/sdk:8.0 \
-            bash -lc '
-              set -euo pipefail
-              # 如仓库根有 .config/dotnet-tools.json：
-              dotnet tool restore || true
+          set -euo pipefail
 
-              # 若没有 tool manifest，临时全局安装（版本改成和你们 EF Core 匹配的）：
-              if ! command -v dotnet-ef >/dev/null; then
-                dotnet tool install -g dotnet-ef --version 8.0.7
-                export PATH="$PATH:/root/.dotnet/tools"
-              fi
+          # 在 EC2 上通过 SSM 执行迁移
+          CMD="export ApiConfigs__DBConnection=\"$RDS_CONN\"; \
+              export ASPNETCORE_ENVIRONMENT=Production; \
+              docker pull mcr.microsoft.com/dotnet/sdk:8.0; \
+              docker run --rm \
+                -e ApiConfigs__DBConnection=\"$RDS_CONN\" \
+                -e ASPNETCORE_ENVIRONMENT=Production \
+                -v /srv/settly:/src \
+                mcr.microsoft.com/dotnet/sdk:8.0 \
+                bash -lc 'dotnet tool install -g dotnet-ef --version 8.0.7; \
+                          export PATH=\$PATH:/root/.dotnet/tools; \
+                          cd /src/SettlyModels; \
+                          dotnet ef database update --startup-project ../SettlyApi'"
 
-              # RDS 可能刚切网，做一个连接重试（无需 sleep 固定秒）
-              for i in {1..30}; do
-                # 试编译一次以尽快发现项目问题
-                dotnet build /src/SettlyApi/SettlyApi.csproj -c Release && break || true
-                echo "retry build $i/30..." && sleep 2
-              done
-
-              cd /src/SettlyModels
-              # 迁移：启动项目为 SettlyApi，这样会读取 ApiConfigs__DBConnection
-              dotnet ef database update --startup-project ../SettlyApi
-            '
+          # 发送 SSM 命令
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceIds,Values=$EC2_INSTANCE_ID" \
+            --parameters "commands=$CMD" \
+            --comment "Run EF Core migrations" \
+            --region "$AWS_REGION"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.EC2_PUBLIC_IP }} # Replace with your EC2 public IP, this ip will change if you stop and start the instance!!!!!!
+          host: ${{ secrets.EC2_PUBLIC_IP }}   # 注意：如果重启实例这个IP会变
           username: ec2-user
           key: ${{ secrets.EC2_KEY_PAIR }}
           script: |
