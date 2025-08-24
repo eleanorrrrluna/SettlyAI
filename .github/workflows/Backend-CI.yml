@@ -10,8 +10,11 @@ on:
     #   - 'backend/**'
 
 jobs:
-  build-and-test:
+  build-test-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: backend
@@ -35,6 +38,7 @@ jobs:
       AWS_REGION: ap-southeast-2
       ECR_REPOSITORY: settlyai-backend
       IMAGE_TAG: latest
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
       # Set connection string for test DB
       ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=testdb;User Id=testuser;Password=testpass
 
@@ -61,7 +65,14 @@ jobs:
       - name: Test
         run: dotnet test backend.sln --no-build --configuration Release --logger trx
 
-      - name: Login to Amazon ECR
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: backend-deploy        
+      
+        - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
