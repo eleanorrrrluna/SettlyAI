@@ -1,22 +1,22 @@
 //模块的layout,只负责模块在page里的结构,先占位
-import { Box, Container, Paper, Typography, styled } from '@mui/material';
+import { Box, Typography, styled } from '@mui/material';
 import PropertyMetricCard from './components/PropertyMetricCard';
 import type { PropertyMetricItem } from './components/PropertyMetricCard';
 //styled API创建组件
-const SectionPaper = styled(Paper)(({ theme }) => ({
-  //theme.spacing(4); = 16px
-  padding: theme.spacing(0, 4),
-  border: `1px solid ${theme.palette.divider}`,
+const SectionContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(0, 16),
+  margin: theme.spacing(3, 0),
 }));
 const TitleWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
+  marginBottom: theme.spacing(8),
 }));
 const CardGrid = styled(Box)(({ theme }) => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
+  gridTemplateColumns: 'repeat(3, min(300px))',
   //卡与卡之间横竖8px
-  gap: theme.spacing(2),
+  gap: theme.spacing(6),
   //responsive:屏幕尺寸小于中等md:899.95px时卡片变一列
   [theme.breakpoints.down('md')]: {
     gridTemplateColumns: '1fr',
@@ -31,11 +31,9 @@ const PropertyMarketInsightsSection = ({
   items: PropertyMetricItem[];
 }) => {
   return (
-    <SectionPaper>
+    <SectionContainer>
       <TitleWrapper>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {title}
-        </Typography>
+        <Typography variant="h4">{title}</Typography>
       </TitleWrapper>
 
       <CardGrid>
@@ -44,7 +42,7 @@ const PropertyMarketInsightsSection = ({
           <PropertyMetricCard key={index} {...item} />
         ))}
       </CardGrid>
-    </SectionPaper>
+    </SectionContainer>
   );
 };
 export default PropertyMarketInsightsSection;

@@ -112,6 +112,11 @@ const SuburbReportPage = () => {
           </div>
         ) : (
           <>
+            <PropertyMarketInsightsSection
+              title={TITLES.propertyMarketInsights}
+              items={propertyMetrics}
+            />
+
             <MetricCardsSection
               title={TITLES.demandDevelopment}
               data={formattedData.demand}
@@ -121,12 +126,6 @@ const SuburbReportPage = () => {
               title={TITLES.lifeStyle}
               data={formattedData.livability}
             />
-
-            <PropertyMarketInsightsSection
-              title={TITLES.propertyMarketInsights}
-              items={propertyMetrics}
-            />
-
             {/* todo:  replace with real action buttons , feel free to modify*/}
             <ActionButtonWrapper>
               <Button>save this suburb</Button>
