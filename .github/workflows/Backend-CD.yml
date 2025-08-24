@@ -66,15 +66,30 @@ jobs:
           ASPNETCORE_ENVIRONMENT: Production
         run: |
           docker run --rm --pull=always \
-            -e ConnectionStrings__Default="$RDS_CONN" \
-            -e ASPNETCORE_ENVIRONMENT="$ASPNETCORE_ENVIRONMENT" \
+            -e "ApiConfigs__DBConnection=$RDS_CONN" \
+            -e "ASPNETCORE_ENVIRONMENT=Production" \
             -v "$PWD":/src \
             mcr.microsoft.com/dotnet/sdk:8.0 \
             bash -lc '
               set -euo pipefail
-              cd /src
-              dotnet tool restore
-              cd SettlyModels
+              # 如仓库根有 .config/dotnet-tools.json：
+              dotnet tool restore || true
+
+              # 若没有 tool manifest，临时全局安装（版本改成和你们 EF Core 匹配的）：
+              if ! command -v dotnet-ef >/dev/null; then
+                dotnet tool install -g dotnet-ef --version 8.0.7
+                export PATH="$PATH:/root/.dotnet/tools"
+              fi
+
+              # RDS 可能刚切网，做一个连接重试（无需 sleep 固定秒）
+              for i in {1..30}; do
+                # 试编译一次以尽快发现项目问题
+                dotnet build /src/SettlyApi/SettlyApi.csproj -c Release && break || true
+                echo "retry build $i/30..." && sleep 2
+              done
+
+              cd /src/SettlyModels
+              # 迁移：启动项目为 SettlyApi，这样会读取 ApiConfigs__DBConnection
               dotnet ef database update --startup-project ../SettlyApi
             '
 
