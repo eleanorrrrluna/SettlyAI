@@ -1,6 +1,5 @@
 import { Card, CardContent, Tooltip, Typography, Box } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-
 export interface PropertyMetricItem {
   label: string;
   value: string;
@@ -9,7 +8,6 @@ export interface PropertyMetricItem {
   growthValue?: number;
   isGrowthMetric?: boolean;
 }
-
 const PropertyMetricCard = ({
   label,
   value,
@@ -26,9 +24,7 @@ const PropertyMetricCard = ({
     if (growthValue < 0) return 'error.main';
     return 'text.primary';
   };
-
   const valueColor = getValueColor(growthValue, isGrowthMetric);
-
   return (
     <Card
       variant="outlined"
@@ -66,12 +62,9 @@ const PropertyMetricCard = ({
           p: 4,
         }}
       >
-        {/* 标签 */}
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
           {label}
         </Typography>
-
-        {/* 数值 */}
         <Typography
           variant="h4"
           sx={{
@@ -80,8 +73,6 @@ const PropertyMetricCard = ({
         >
           {value}
         </Typography>
-
-        {/* 副文本 */}
         {subText && (
           <Typography variant="p1" sx={{ color: 'text.disabled', mt: 0.25 }}>
             {subText}

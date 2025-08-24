@@ -1,7 +1,6 @@
 import type { IHousingMarket } from '@/interfaces/housingmarket';
 import type { PropertyMetricItem } from '../components/PropertyMetricCard';
 const percent = (n: number, d = 1) => `${(n * 100).toFixed(d)}%`;
-
 const money = (n: number) =>
   n
     .toLocaleString('en-AU', {
@@ -10,7 +9,6 @@ const money = (n: number) =>
       maximumFractionDigits: 0,
     })
     .replace('A$', '$');
-
 export function mapPropertyCards(api: IHousingMarket): PropertyMetricItem[] {
   return [
     {
