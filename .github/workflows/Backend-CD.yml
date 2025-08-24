@@ -62,15 +62,21 @@ jobs:
 
       - name: Apply EF Core migrations (Pre-deploy)
         env:
-          ConnectionStrings__Default: ${{ secrets.RDS_CONN_STRING }}
+          RDS_CONN: ${{ secrets.RDS_CONNECTION_STRING }}
           ASPNETCORE_ENVIRONMENT: Production
         run: |
-          docker run --rm \
-            -e ConnectionStrings__Default \
-            -e ASPNETCORE_ENVIRONMENT \
-            -v $PWD:/src -w /src/SettlyModels \
+          docker run --rm --pull=always \
+            -e ConnectionStrings__Default="$RDS_CONN" \
+            -e ASPNETCORE_ENVIRONMENT="$ASPNETCORE_ENVIRONMENT" \
+            -v "$PWD":/src \
             mcr.microsoft.com/dotnet/sdk:8.0 \
-            bash -lc 'dotnet tool restore && dotnet ef database update --startup-project ../SettlyApi'
+            bash -lc '
+              set -euo pipefail
+              cd /src
+              dotnet tool restore
+              cd SettlyModels
+              dotnet ef database update --startup-project ../SettlyApi
+            '
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
