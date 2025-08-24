@@ -32,6 +32,9 @@ jobs:
           --health-retries=5
 
     env:
+      AWS_REGION: ap-southeast-2
+      ECR_REPOSITORY: settlyai-backend
+      IMAGE_TAG: latest
       # Set connection string for test DB
       ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=testdb;User Id=testuser;Password=testpass
 
