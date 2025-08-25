@@ -13,14 +13,10 @@ RUN apt-get update && apt-get install -y docker.io \
     && rm -rf /var/lib/apt/lists/* \
     && docker --version
 
-# ---------- AWS CLI v2 ----------
+# ---------- AWS CLI v2 (apt 方式) ----------
 RUN apt-get update && \
-    apt-get install -y unzip curl groff less \
-    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip" \
-    && unzip /tmp/awscliv2.zip -d /tmp \
-    && /tmp/aws/install \
-    && rm -rf /tmp/aws /tmp/awscliv2.zip \
-    && aws --version
+    apt-get install -y awscli groff less jq && \
+    aws --version
 
 # ---------- Node 22 + pnpm ----------
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
