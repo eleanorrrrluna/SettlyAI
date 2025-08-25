@@ -1,0 +1,231 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    ansiColor('xterm')
+  }
+
+  parameters {
+    // 与 GHA 对齐的默认值
+    string(name: 'AWS_REGION', defaultValue: 'ap-southeast-2', description: 'AWS 区域')
+    string(name: 'ECR_REPOSITORY', defaultValue: 'settlyai-backend', description: 'ECR 仓库名')
+    string(name: 'IMAGE_TAG', defaultValue: 'latest', description: '镜像标签')
+    string(name: 'WORKDIR', defaultValue: 'backend', description: '工作目录（backend）')
+    string(name: 'EC2_INSTANCE_ID', defaultValue: '', description: '用于 SSM 迁移的实例 ID（必填）')
+    string(name: 'TARGET_DIR', defaultValue: '/srv/settly', description: '在 EC2 上同步源码的目录')
+    choice(name: 'RUN_CD', choices: ['auto', 'always', 'never'], description: '是否执行 CD（auto = 仅 main 分支执行）')
+  }
+
+  environment {
+    AWS_REGION = "${params.AWS_REGION}"
+    ECR_REPOSITORY = "${params.ECR_REPOSITORY}"
+    IMAGE_TAG = "${params.IMAGE_TAG}"
+    WORKDIR = "${params.WORKDIR}"
+    TARGET_DIR = "${params.TARGET_DIR}"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Tooling sanity check') {
+      steps {
+        sh '''
+          set -e
+          command -v docker >/dev/null || { echo "Docker 未安装"; exit 1; }
+          command -v aws >/dev/null || { echo "AWS CLI 未安装"; exit 1; }
+          command -v jq >/dev/null || { echo "jq 未安装"; exit 1; }
+          aws --version
+          docker version
+        '''
+      }
+    }
+
+    // ===== CI 部分：与 Backend CI 对齐 =====
+    stage('Start Postgres 15 (for tests)') {
+      steps {
+        sh '''
+          set -e
+          docker rm -f ci-postgres || true
+          docker run -d --name ci-postgres \
+            -e POSTGRES_USER=testuser \
+            -e POSTGRES_PASSWORD=testpass \
+            -e POSTGRES_DB=testdb \
+            -p 5432:5432 \
+            postgres:15
+
+          echo "等待 Postgres 健康就绪……"
+          for i in $(seq 1 30); do
+            docker exec ci-postgres pg_isready -U testuser && break
+            sleep 2
+          done
+          docker exec ci-postgres pg_isready -U testuser
+        '''
+      }
+    }
+
+    stage('Setup .NET SDK 8 & tools') {
+      steps {
+        sh '''
+          set -e
+          if ! command -v dotnet >/dev/null; then
+            echo "警告：Agent 未安装 dotnet，可考虑改用容器执行 dotnet 步骤"
+          fi
+          # 安装 ef / format（如果已装会跳过）
+          dotnet tool install -g dotnet-ef      || true
+          dotnet tool install -g dotnet-format  || true
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet --info || true
+        '''
+      }
+    }
+
+    stage('Restore / Format / Build / Test') {
+      environment {
+        // 与 GHA services 等价：把测试连接串注入
+        ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=testdb;User Id=testuser;Password=testpass'
+      }
+      steps {
+        dir("${WORKDIR}") {
+          sh '''
+            set -e
+            export PATH="$PATH:$HOME/.dotnet/tools"
+            dotnet restore backend.sln
+            dotnet format --verify-no-changes || { echo "代码格式不符合规范，若需自动修复请本地运行 dotnet format"; exit 2; }
+            dotnet build backend.sln --no-restore --configuration Release
+            dotnet test  backend.sln --no-build --configuration Release --logger trx
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: '**/*.trx'
+        }
+      }
+    }
+
+    // ===== 推镜像到 ECR（CI 与 CD 都有，在这里统一）=====
+    stage('Login to ECR') {
+      steps {
+        sh '''
+          set -e
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "AWS Account: $ACCOUNT_ID"
+          aws ecr get-login-password --region "$AWS_REGION" | docker login \
+            --username AWS \
+            --password-stdin "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+        '''
+      }
+    }
+
+    stage('Build & Push Image to ECR') {
+      steps {
+        dir("${WORKDIR}") {
+          sh '''
+            set -e
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+            IMAGE_LOCAL="$ECR_REPOSITORY:$IMAGE_TAG"
+            IMAGE_REMOTE="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+            docker build -t "$IMAGE_LOCAL" .
+            docker tag   "$IMAGE_LOCAL" "$IMAGE_REMOTE"
+            docker push  "$IMAGE_REMOTE"
+          '''
+        }
+      }
+    }
+
+    // ===== CD 部分（与 Backend CD 对齐）：main 分支执行；或按参数强制执行 =====
+    stage('Sync backend source to /srv/settly') {
+      when {
+        expression {
+          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
+        }
+      }
+      steps {
+        sh '''
+          set -e
+          sudo mkdir -p "$TARGET_DIR"
+          sudo rsync -a --delete "${WORKDIR}/" "$TARGET_DIR/"
+          sudo chown -R $(id -u):$(id -g) "$TARGET_DIR" || true
+        '''
+        // 若 Jenkins 与部署目标不在同机，改用 Publish Over SSH 或 ssh/scp：
+        // sh 'scp -i /path/to/key -r ${WORKDIR}/ ec2-user@${EC2_PUBLIC_IP}:/srv/settly'
+      }
+    }
+
+    stage('Apply EF Core migrations via SSM (Pre-deploy)') {
+      when {
+        expression {
+          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
+        }
+      }
+      steps {
+        withCredentials([string(credentialsId: 'rds-connection-string', variable: 'RDS_CONN')]) {
+          sh '''
+            set -euo pipefail
+            test -n "${EC2_INSTANCE_ID}" || { echo "缺少参数 EC2_INSTANCE_ID"; exit 1; }
+
+            cat >/tmp/ssm-params.json <<'JSON'
+            {
+              "commands": [
+                "set -euo pipefail",
+                "export ASPNETCORE_ENVIRONMENT=Production",
+                "export ApiConfigs__DBConnection={{RDS_CONN}}",
+                "docker pull mcr.microsoft.com/dotnet/sdk:8.0",
+                "docker run --rm -e ApiConfigs__DBConnection=\\"$ApiConfigs__DBConnection\\" -e ASPNETCORE_ENVIRONMENT=Production -v ${TARGET_DIR}:/src mcr.microsoft.com/dotnet/sdk:8.0 bash -lc 'dotnet tool install -g dotnet-ef --version 8; export PATH=$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi'"
+              ]
+            }
+            JSON
+
+            sed -i "s|{{RDS_CONN}}|${RDS_CONN}|g" /tmp/ssm-params.json
+
+            RESP=$(aws ssm send-command \
+              --document-name "AWS-RunShellScript" \
+              --targets "Key=instanceIds,Values=${EC2_INSTANCE_ID}" \
+              --parameters file:///tmp/ssm-params.json \
+              --comment "Run EF Core migrations (CD Pre-deploy via SSM)" \
+              --region "${AWS_REGION}")
+
+            CID=$(echo "$RESP" | jq -r '.Command.CommandId')
+            echo "SSM CommandId: $CID"
+          '''
+        }
+      }
+    }
+
+    stage('Deploy container on EC2 (same host)') {
+      when {
+        expression {
+          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
+        }
+      }
+      steps {
+        sh '''
+          set -e
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          IMAGE_REMOTE="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          aws ecr get-login-password --region "$AWS_REGION" | docker login \
+            --username AWS --password-stdin "$REGISTRY"
+
+          docker pull "$IMAGE_REMOTE"
+          docker rm -f backend || true
+          # 暴露 80:80，按你的镜像内部端口调整
+          docker run -d --name backend --restart=always -p 80:80 "$IMAGE_REMOTE"
+          docker ps --filter name=backend
+        '''
+      }
+    }
+  }
+
+  post {
+    success { echo '✅ Pipeline 成功' }
+    failure { echo '❌ Pipeline 失败，请查看日志' }
+    always  { cleanWs() }
+  }
+}
