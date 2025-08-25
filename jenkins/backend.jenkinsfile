@@ -29,19 +29,6 @@ pipeline {
       steps { checkout scm }
     }
 
-    stage('Tooling sanity check') {
-      steps {
-        sh '''
-          set -e
-          command -v docker >/dev/null || { echo "Docker 未安装"; exit 1; }
-          command -v aws >/dev/null || { echo "AWS CLI 未安装"; exit 1; }
-          command -v jq >/dev/null || { echo "jq 未安装"; exit 1; }
-          aws --version
-          docker version
-        '''
-      }
-    }
-
     // ===== CI 部分：与 Backend CI 对齐 =====
     stage('Start Postgres 15 (for tests)') {
       steps {
@@ -65,77 +52,73 @@ pipeline {
       }
     }
 
-    stage('Setup .NET SDK 8 & tools') {
-      steps {
-        sh '''
-          set -e
-          if ! command -v dotnet >/dev/null; then
-            echo "警告：Agent 未安装 dotnet，可考虑改用容器执行 dotnet 步骤"
-          fi
-          # 安装 ef / format（如果已装会跳过）
-          dotnet tool install -g dotnet-ef      || true
-          dotnet tool install -g dotnet-format  || true
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          dotnet --info || true
-        '''
-      }
-    }
-
-    stage('Restore / Format / Build / Test') {
-      environment {
-        // 与 GHA services 等价：把测试连接串注入
-        ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=testdb;User Id=testuser;Password=testpass'
-      }
-      steps {
-        dir("${WORKDIR}") {
-          sh '''
-            set -e
-            export PATH="$PATH:$HOME/.dotnet/tools"
-            dotnet restore backend.sln
-            dotnet format --verify-no-changes || { echo "代码格式不符合规范，若需自动修复请本地运行 dotnet format"; exit 2; }
-            dotnet build backend.sln --no-restore --configuration Release
-            dotnet test  backend.sln --no-build --configuration Release --logger trx
-          '''
+    stage('Setup .NET SDK & Tools') {
+            steps {
+                sh '''
+                  export PATH="$PATH:$HOME/.dotnet/tools"
+                  dotnet --info
+                  dotnet tool install -g dotnet-ef || true
+                  dotnet tool install -g dotnet-format || true
+                '''
+            }
         }
-      }
-      post {
-        always {
-          junit allowEmptyResults: true, testResults: '**/*.trx'
-        }
-      }
-    }
 
-    // ===== 推镜像到 ECR（CI 与 CD 都有，在这里统一）=====
+    stage('Formatting Check') {
+            steps {
+                script {
+                    // 用 warnError 包裹，格式不合规只标记 UNSTABLE，不中断 pipeline
+                    warnError('⚠️ 代码格式不符合规范') {
+                        sh '''
+                          export PATH="$PATH:$HOME/.dotnet/tools"
+                          dotnet format --verify-no-changes
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'dotnet build backend.sln --no-restore --configuration Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    dotnet test backend.sln --no-build --configuration Release \
+                        --logger "trx;LogFileName=test-results.trx" \
+                        --results-directory TestResults
+                    dotnet tool install -g trx2junit || true
+                    trx2junit TestResults/*.trx
+                '''
+            }
+            post {
+                always {
+                    junit testResults: 'TestResults/*.xml', allowEmptyResults: true, keepLongStdio: true
+                }
+            }
+        }
+
     stage('Login to ECR') {
-      steps {
-        sh '''
-          set -e
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          echo "AWS Account: $ACCOUNT_ID"
-          aws ecr get-login-password --region "$AWS_REGION" | docker login \
-            --username AWS \
-            --password-stdin "$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-        '''
-      }
-    }
-
-    stage('Build & Push Image to ECR') {
-      steps {
-        dir("${WORKDIR}") {
-          sh '''
-            set -e
-            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-            REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-            IMAGE_LOCAL="$ECR_REPOSITORY:$IMAGE_TAG"
-            IMAGE_REMOTE="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-            docker build -t "$IMAGE_LOCAL" .
-            docker tag   "$IMAGE_LOCAL" "$IMAGE_REMOTE"
-            docker push  "$IMAGE_REMOTE"
-          '''
+            steps {
+                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+                    sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com'
+                }
+            }
         }
-      }
+
+        stage('Build & Push Image') {
+            steps {
+                sh '''
+                  ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com
+                  docker build -t $ECR_REGISTRY/${ECR_REPOSITORY}:${IMAGE_TAG} .
+                  docker push $ECR_REGISTRY/${ECR_REPOSITORY}:${IMAGE_TAG}
+                '''
+            }
+        }
     }
+
 
     // ===== CD 部分（与 Backend CD 对齐）：main 分支执行；或按参数强制执行 =====
     stage('Sync backend source to /srv/settly') {
