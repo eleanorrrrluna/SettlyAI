@@ -89,17 +89,15 @@ pipeline {
         dir("${WORKDIR}") {
           sh '''
             set -e
-            export PATH="$PATH:$HOME/.dotnet/tools"
-            dotnet test backend.sln --no-build --configuration Release \
-              --logger "trx;LogFileName=test-results.trx" \
-              --results-directory TestResults
-            trx2junit TestResults/*.trx
+        dotnet test backend.sln --no-build --configuration Release \
+          --logger "trx;LogFileName=test-results.trx" \
+          --results-directory TestResults
           '''
         }
       }
       post {
         always {
-          junit testResults: "${WORKDIR}/TestResults/*.xml", allowEmptyResults: true, keepLongStdio: true
+          mstest testResultsFile: "${WORKDIR}/TestResults/*.trx", keepLongStdio: true, failOnError: false
         }
       }
     }
