@@ -205,9 +205,3 @@ pipeline {
     }
   }
 
-  post {
-    success { echo '✅ Pipeline 成功' }
-    failure { echo '❌ Pipeline 失败，请查看日志' }
-    always  { cleanWs() }
-  }
-}
