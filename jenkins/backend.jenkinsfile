@@ -1,27 +1,22 @@
 pipeline {
   agent any
 
-  options {
-    timestamps()
-  }
-
   parameters {
-    // 与 GHA 对齐的默认值
-    string(name: 'AWS_REGION', defaultValue: 'ap-southeast-2', description: 'AWS 区域')
-    string(name: 'ECR_REPOSITORY', defaultValue: 'settlyai-backend', description: 'ECR 仓库名')
-    string(name: 'IMAGE_TAG', defaultValue: 'latest', description: '镜像标签')
-    string(name: 'WORKDIR', defaultValue: 'backend', description: '工作目录（backend）')
-    string(name: 'EC2_INSTANCE_ID', defaultValue: '3.26.73.36', description: '用于 SSM 迁移的实例 ID（必填）')
-    string(name: 'TARGET_DIR', defaultValue: '/srv/settly', description: '在 EC2 上同步源码的目录')
+    string(name: 'AWS_REGION',       defaultValue: 'ap-southeast-2', description: 'AWS 区域')
+    string(name: 'ECR_REPOSITORY',   defaultValue: 'settlyai-backend', description: 'ECR 仓库名')
+    string(name: 'IMAGE_TAG',        defaultValue: 'latest', description: '镜像标签')
+    string(name: 'WORKDIR',          defaultValue: 'backend', description: '工作目录（backend）')
+    string(name: 'EC2_INSTANCE_ID',  defaultValue: 'i-09c50b916d3b635a7', description: '用于 SSM 迁移的实例 ID（必填）')
+    string(name: 'TARGET_DIR',       defaultValue: '/srv/settly', description: '在 EC2 上同步源码的目录')
     choice(name: 'RUN_CD', choices: ['auto', 'always', 'never'], description: '是否执行 CD（auto = 仅 main 分支执行）')
   }
 
   environment {
-    AWS_REGION = "${params.AWS_REGION}"
+    AWS_REGION     = "${params.AWS_REGION}"
     ECR_REPOSITORY = "${params.ECR_REPOSITORY}"
-    IMAGE_TAG = "${params.IMAGE_TAG}"
-    WORKDIR = "${params.WORKDIR}"
-    TARGET_DIR = "${params.TARGET_DIR}"
+    IMAGE_TAG      = "${params.IMAGE_TAG}"
+    WORKDIR        = "${params.WORKDIR}"
+    TARGET_DIR     = "${params.TARGET_DIR}"
   }
 
   stages {
@@ -29,7 +24,7 @@ pipeline {
       steps { checkout scm }
     }
 
-    // ===== CI 部分：与 Backend CI 对齐 =====
+    // ===== CI =====
     stage('Start Postgres 15 (for tests)') {
       steps {
         sh '''
@@ -53,103 +48,116 @@ pipeline {
     }
 
     stage('Setup .NET SDK & Tools') {
-            steps {
-                sh '''
-                  export PATH="$PATH:$HOME/.dotnet/tools"
-                  dotnet --info
-                  dotnet tool install -g dotnet-ef || true
-                  dotnet tool install -g dotnet-format || true
-                '''
-            }
-        }
-
-    stage('Formatting Check') {
-            steps {
-                script {
-                    // 用 warnError 包裹，格式不合规只标记 UNSTABLE，不中断 pipeline
-                    warnError('⚠️ 代码格式不符合规范') {
-                        sh '''
-                          export PATH="$PATH:$HOME/.dotnet/tools"
-                          dotnet format --verify-no-changes
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh 'dotnet build backend.sln --no-restore --configuration Release'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh '''
-                    dotnet test backend.sln --no-build --configuration Release \
-                        --logger "trx;LogFileName=test-results.trx" \
-                        --results-directory TestResults
-                    dotnet tool install -g trx2junit || true
-                    trx2junit TestResults/*.trx
-                '''
-            }
-            post {
-                always {
-                    junit testResults: 'TestResults/*.xml', allowEmptyResults: true, keepLongStdio: true
-                }
-            }
-        }
-
-    stage('Login to ECR') {
-            steps {
-                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
-                    sh 'aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com'
-                }
-            }
-        }
-
-        stage('Build & Push Image') {
-            steps {
-                sh '''
-                  ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com
-                  docker build -t $ECR_REGISTRY/${ECR_REPOSITORY}:${IMAGE_TAG} .
-                  docker push $ECR_REGISTRY/${ECR_REPOSITORY}:${IMAGE_TAG}
-                '''
-            }
-        }
+      steps {
+        sh '''
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet --info || true
+          dotnet tool install -g dotnet-ef || true
+          dotnet tool install -g dotnet-format || true
+          dotnet tool install -g trx2junit   || true
+        '''
+      }
     }
 
-
-    // ===== CD 部分（与 Backend CD 对齐）：main 分支执行；或按参数强制执行 =====
-    stage('Sync backend source to /srv/settly') {
-      when {
-        expression {
-          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
+    stage('Formatting Check (non-blocking)') {
+      steps {
+        dir("${WORKDIR}") {
+          script {
+            def rc = sh(script: '''
+              export PATH="$PATH:$HOME/.dotnet/tools"
+              dotnet format --verify-no-changes
+            ''', returnStatus: true)
+            if (rc != 0) {
+              echo "⚠️ 代码格式不符合规范：请本地运行 'dotnet format' 修复"
+              currentBuild.result = 'UNSTABLE'
+            }
+          }
         }
       }
+    }
+
+    stage('Build') {
+      steps {
+        dir("${WORKDIR}") {
+          sh 'dotnet build backend.sln --no-restore --configuration Release'
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        dir("${WORKDIR}") {
+          sh '''
+            set -e
+            export PATH="$PATH:$HOME/.dotnet/tools"
+            dotnet test backend.sln --no-build --configuration Release \
+              --logger "trx;LogFileName=test-results.trx" \
+              --results-directory TestResults
+            trx2junit TestResults/*.trx
+          '''
+        }
+      }
+      post {
+        always {
+          junit testResults: "${WORKDIR}/TestResults/*.xml", allowEmptyResults: true, keepLongStdio: true
+        }
+      }
+    }
+
+    stage('Login to ECR') {
       steps {
         sh '''
           set -e
-          sudo mkdir -p "$TARGET_DIR"
-          sudo rsync -a --delete "${WORKDIR}/" "$TARGET_DIR/"
-          sudo chown -R $(id -u):$(id -g) "$TARGET_DIR" || true
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          aws ecr get-login-password --region "${AWS_REGION}" \
+            | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+          echo "Logged in to ${ECR_REGISTRY}"
         '''
-        // 若 Jenkins 与部署目标不在同机，改用 Publish Over SSH 或 ssh/scp：
-        // sh 'scp -i /path/to/key -r ${WORKDIR}/ ec2-user@${EC2_PUBLIC_IP}:/srv/settly'
+      }
+    }
+
+    stage('Build & Push Image') {
+      steps {
+        dir("${WORKDIR}") {
+          sh '''
+            set -e
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+            docker build -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" .
+            docker push    "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          '''
+        }
+      }
+    }
+
+    // ===== CD（在同一个 stages{} 里；受 RUN_CD 控制）=====
+    stage('Sync backend source to /srv/settly') {
+      when {
+        expression { (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main') }
+      }
+      steps {
+        dir("${WORKDIR}") {
+          sh '''
+            set -e
+            sudo mkdir -p "${TARGET_DIR}"
+            # 这里 rsync 的源要用当前目录（WORKDIR 下），因此在 dir("${WORKDIR}") 里执行
+            sudo rsync -a --delete "./" "${TARGET_DIR}/"
+            sudo chown -R $(id -u):$(id -g) "${TARGET_DIR}" || true
+          '''
+        }
       }
     }
 
     stage('Apply EF Core migrations via SSM (Pre-deploy)') {
       when {
-        expression {
-          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
-        }
+        expression { (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main') }
       }
       steps {
         withCredentials([string(credentialsId: 'rds-connection-string', variable: 'RDS_CONN')]) {
           sh '''
             set -euo pipefail
-            test -n "${EC2_INSTANCE_ID}" || { echo "缺少参数 EC2_INSTANCE_ID"; exit 1; }
+            test -n "${EC2_INSTANCE_ID}" || { echo "缺少参数 EC2_INSTANCE_ID（请填入实例 ID，如 i-0abcd...）"; exit 1; }
 
             cat >/tmp/ssm-params.json <<'JSON'
             {
@@ -158,11 +166,12 @@ pipeline {
                 "export ASPNETCORE_ENVIRONMENT=Production",
                 "export ApiConfigs__DBConnection={{RDS_CONN}}",
                 "docker pull mcr.microsoft.com/dotnet/sdk:8.0",
-                "docker run --rm -e ApiConfigs__DBConnection=\\"$ApiConfigs__DBConnection\\" -e ASPNETCORE_ENVIRONMENT=Production -v ${TARGET_DIR}:/src mcr.microsoft.com/dotnet/sdk:8.0 bash -lc 'dotnet tool install -g dotnet-ef --version 8; export PATH=$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi'"
+                "docker run --rm -e ApiConfigs__DBConnection=\\"$ApiConfigs__DBConnection\\" -e ASPNETCORE_ENVIRONMENT=Production -v /srv/settly:/src mcr.microsoft.com/dotnet/sdk:8.0 bash -lc 'dotnet tool install -g dotnet-ef --version 8; export PATH=$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi'"
               ]
             }
             JSON
 
+            # 将占位符替换为真正的连接串
             sed -i "s|{{RDS_CONN}}|${RDS_CONN}|g" /tmp/ssm-params.json
 
             RESP=$(aws ssm send-command \
@@ -181,9 +190,7 @@ pipeline {
 
     stage('Deploy container on EC2 (same host)') {
       when {
-        expression {
-          return (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main')
-        }
+        expression { (params.RUN_CD == 'always') || (params.RUN_CD == 'auto' && env.BRANCH_NAME == 'main') }
       }
       steps {
         sh '''
@@ -197,11 +204,10 @@ pipeline {
 
           docker pull "$IMAGE_REMOTE"
           docker rm -f backend || true
-          # 暴露 80:80，按你的镜像内部端口调整
           docker run -d --name backend --restart=always -p 80:80 "$IMAGE_REMOTE"
           docker ps --filter name=backend
         '''
       }
     }
-  }
-
+  } // <-- 这里才结束 stages{}
+} // <-- 这里结束 pipeline{}
