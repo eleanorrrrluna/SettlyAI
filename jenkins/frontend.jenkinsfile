@@ -19,10 +19,13 @@ pipeline {
             }
         }
 
-        stage('Setup Node.js & pnpm') {
+        stage('Setup Node & pnpm') {
             steps {
                 dir('frontend') {
                     sh '''
+                        corepack enable
+                        corepack prepare pnpm@${PNPM_VERSION} --activate
+                        node -v
                         pnpm --version
                         pnpm install
                     '''
