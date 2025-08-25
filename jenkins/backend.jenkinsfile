@@ -12,7 +12,7 @@ pipeline {
     string(name: 'ECR_REPOSITORY', defaultValue: 'settlyai-backend', description: 'ECR 仓库名')
     string(name: 'IMAGE_TAG', defaultValue: 'latest', description: '镜像标签')
     string(name: 'WORKDIR', defaultValue: 'backend', description: '工作目录（backend）')
-    string(name: 'EC2_INSTANCE_ID', defaultValue: '', description: '用于 SSM 迁移的实例 ID（必填）')
+    string(name: 'EC2_INSTANCE_ID', defaultValue: '3.26.73.36', description: '用于 SSM 迁移的实例 ID（必填）')
     string(name: 'TARGET_DIR', defaultValue: '/srv/settly', description: '在 EC2 上同步源码的目录')
     choice(name: 'RUN_CD', choices: ['auto', 'always', 'never'], description: '是否执行 CD（auto = 仅 main 分支执行）')
   }
