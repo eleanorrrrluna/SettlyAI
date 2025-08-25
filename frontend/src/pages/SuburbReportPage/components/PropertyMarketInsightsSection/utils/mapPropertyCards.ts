@@ -59,7 +59,7 @@ export function mapPropertyCards(api: IHousingMarket): PropertyMetricItem[] {
     {
       label: 'Vacancy Rate',
       value: percent(api.vacancyRate),
-      subText: 'Share of rental properties that are vacant',
+      subText: 'Rental properties that are vacant',
       hint: 'Share of rental properties that are vacant. Lower generally indicates tighter rental conditions.',
       isGrowthMetric: false,
     },
