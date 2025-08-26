@@ -2,7 +2,7 @@ import ActionButtonWrapper from '@/pages/SuburbReportPage/components/ActionButto
 import { Box, Button, styled, Typography } from '@mui/material';
 import MetricCardsSection from './components/MetricCardsSection';
 import { useQueries } from '@tanstack/react-query';
-import { getSuburbLivability } from '@/api/suburbApi';
+import { getSuburbBasicInfo, getSuburbLivability } from '@/api/suburbApi';
 import { Navigate, useParams } from 'react-router-dom';
 import { getDemandAndDev } from '@/api/suburbApi';
 import {
@@ -48,6 +48,10 @@ const SuburbReportPage = () => {
   const results = useQueries({
     queries: [
       {
+        queryKey: ['SuburbBasicInfo', suburbId],
+        queryFn: () => getSuburbBasicInfo(suburbId),
+      },
+      {
         queryKey: ['demandAndDev', suburbId],
         queryFn: () => getDemandAndDev(parseInt(suburbId)),
       },
@@ -80,13 +84,18 @@ const SuburbReportPage = () => {
   }
 
   const formattedData = {
-    demand: results[0].data ? mapDevCardData(results[0].data) : undefined,
-    livability: results[1].data ? mapLivability(results[1].data) : undefined,
+    suburbBasicInfo: results[0].data ? results[0].data : undefined,
+    demand: results[1].data ? mapDevCardData(results[1].data) : undefined,
+    livability: results[2].data ? mapLivability(results[2].data) : undefined,
   };
 
   return (
     <PageContainer>
-      <Banner suburb="Point Cook" postcode="3030" state="VIC" />
+      <Banner
+        suburb={formattedData.suburbBasicInfo?.name}
+        postcode={formattedData.suburbBasicInfo?.postcode}
+        state={formattedData.suburbBasicInfo?.state}
+      />
       <ContentContainer>
         {allLoading ? (
           <div
