@@ -20,8 +20,8 @@ pipeline {
       steps {
         dir("${WORKDIR}") {
           sh '''
+            dotnet -v
             export PATH="$PATH:$HOME/.dotnet/tools"
-            dotnet --info
             dotnet tool install -g dotnet-ef || true
           '''
         }
@@ -60,33 +60,27 @@ pipeline {
       }
     }
 
-    stage('Apply DB Migrations via SSM') {
-      steps {
-        dir("${WORKDIR}") {
-          sh '''
-            set -euo pipefail
-            cat >/tmp/ssm-params.json <<'JSON'
-            {
-              "commands": [
-                "export ASPNETCORE_ENVIRONMENT=Production",
-                "export ApiConfigs__DBConnection={{RDS_CONN}}",
-                "docker run --rm -e ApiConfigs__DBConnection=$ApiConfigs__DBConnection \
-                  -v ${TARGET_DIR}:/src \
-                  mcr.microsoft.com/dotnet/sdk:8.0 \
-                  bash -lc 'dotnet tool install -g dotnet-ef; export PATH=$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi'"
-              ]
-            }
-            JSON
-            sed -i "s|{{RDS_CONN}}|${RDS_CONN}|g" /tmp/ssm-params.json
-            aws ssm send-command \
-              --document-name "AWS-RunShellScript" \
-              --targets "Key=instanceIds,Values=${EC2_INSTANCE_ID}" \
-              --parameters file:///tmp/ssm-params.json \
-              --region "${AWS_REGION}"
-          '''
-        }
-      }
+stage('Apply DB Migrations via SSM') {
+  steps {
+    withCredentials([string(credentialsId: 'rds-connection-string', variable: 'RDS_CONN')]) {
+      sh """
+        aws ssm send-command \
+          --targets "Key=instanceIds,Values=${EC2_INSTANCE_ID}" \
+          --document-name "AWS-RunShellScript" \
+          --comment "EF Core migrations" \
+          --region "${AWS_REGION}" \
+          --parameters 'commands=[
+            "export ApiConfigs__DBConnection=${RDS_CONN}",
+            "docker run --rm \\
+                -e ApiConfigs__DBConnection=$ApiConfigs__DBConnection \\
+                -v ${TARGET_DIR}:/src \\
+                mcr.microsoft.com/dotnet/sdk:8.0 \\
+                bash -lc \\\"dotnet tool install -g dotnet-ef; export PATH=\\$PATH:/root/.dotnet/tools; cd /src/SettlyModels; dotnet ef database update --startup-project ../SettlyApi\\\""
+          ]'
+      """
     }
+  }
+}
 
     stage('Deploy to EC2') {
       steps {
