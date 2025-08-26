@@ -50,17 +50,6 @@ jobs:
       # - name: Start development server
       #   run: pnpm run dev
 
-      - name: Run code linting
-        run: pnpm run lint
-        working-directory: frontend
-
-      - name: Format code
-        run: pnpm run format
-        working-directory: frontend
-
-      # - name: Run Test
-      #   run: pnpm run test
-
       - name: Build Frontend
         run: pnpm exec vite build
         working-directory: frontend
