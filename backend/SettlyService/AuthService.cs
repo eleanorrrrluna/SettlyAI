@@ -13,20 +13,20 @@ public class AuthService : IAuthService
     private readonly SettlyDbContext _context;
     private readonly IUserService _userService;
     private readonly IVerificationCodeService _verificationCodeService;
-    private readonly IEmailSender _emailSender;
+    private readonly IEmailService _emailService;
     private readonly ICreateTokenService _createTokenService;
 
     public AuthService(
         SettlyDbContext context,
         IUserService userService,
         IVerificationCodeService verificationCodeService,
-        IEmailSender emailSender,
+        IEmailService emailService,
         ICreateTokenService createTokenService)
     {
         _context = context;
         _userService = userService;
         _verificationCodeService = verificationCodeService;
-        _emailSender = emailSender;
+        _emailService = emailService;
         _createTokenService = createTokenService;
     }
 
@@ -57,7 +57,8 @@ public class AuthService : IAuthService
             switch (actualType)
             {
                 case VerificationType.Email:
-                    await _emailSender.SendAsync(
+                    await _emailService.SendAsync(
+                        savedUser.Name,
                         savedUser.Email,
                         "Email Verification Code",
                         $"Your email verification code is {code}."
