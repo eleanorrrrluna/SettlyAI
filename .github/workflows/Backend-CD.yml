@@ -85,7 +85,7 @@ jobs:
               "sudo yum install -y dotnet-sdk-8.0 || sudo dnf install -y dotnet-sdk-8.0 || true",
               "dotnet tool list -g | grep dotnet-ef || dotnet tool install --global dotnet-ef --version 8.*",
               "export PATH=\"$PATH:$HOME/.dotnet/tools\"",
-              "DB_CONN=$(aws ssm get-parameter --name \"ApiConfigs__DBConnection" --with-decryption --query \"Parameter.Value\" --output text)",
+              "DB_CONN=$(aws ssm get-parameter --name \"ApiConfigs__DBConnection\" --with-decryption --query \"Parameter.Value\" --output text)",
               "export ApiConfigs__DBConnection=\"$DB_CONN\"",
               "export ASPNETCORE_ENVIRONMENT=Development",
               "cd /home/ec2-user/settlyai/SettlyAI",
