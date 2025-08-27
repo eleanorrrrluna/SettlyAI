@@ -75,9 +75,13 @@ jobs:
       #     ApiConfigs__DBConnection: ${{ secrets.RDS_CONNECTION_STRING }}
 
       - name: Send SSM Command to EC2 to run EF Core Migrations
+        env:
+          AWS_REGION: ap-southeast-2
+          EC2_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: | # Make sure update ec2 public ip in the vpc sg inbound rules for rds access
           aws ssm send-command \
-            --instance-ids i-09c50b916d3b635a7 \
+            --region "$AWS_REGION" \
+            --instance-ids "$EC2_ID" \
             --document-name "AWS-RunShellScript" \
             --comment "Run EF Core Migration" \
             --parameters 'commands=[
