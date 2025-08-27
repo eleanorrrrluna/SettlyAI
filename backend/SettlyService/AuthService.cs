@@ -108,4 +108,16 @@ public class AuthService : IAuthService
 
         return loginOutputDto;
     }
+
+    public async Task<bool> ActivateUserAsync(VerifyCodeDto verifyCodeDto)
+    {
+        var ok = await _verificationCodeService.VerifyCodeAsync(verifyCodeDto);
+        if (!ok) return false;
+        var updateDto = new UserUpdateDto
+        {
+            IsActive = true
+        };
+
+        return await _userService.UpdateUserByIdAsync(verifyCodeDto.UserId, updateDto);;
+    }
 }
