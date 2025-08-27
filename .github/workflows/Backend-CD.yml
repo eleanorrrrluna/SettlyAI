@@ -71,7 +71,7 @@ jobs:
           dotnet ef migrations add InitialCreate --startup-project ./SettlyApi  
           dotnet ef database update --startup-project ./SettlyApi
         env:
-          ConnectionStrings__DefaultConnection: ${{ secrets.RDS_CONNECTION_STRING }}
+          ApiConfigs__DBConnection: ${{ secrets.RDS_CONNECTION_STRING }}
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
