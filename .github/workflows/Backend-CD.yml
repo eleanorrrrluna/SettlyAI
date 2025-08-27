@@ -60,6 +60,11 @@ jobs:
           docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
           docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
       
+      - name: Install dotnet-ef tool
+        run: |
+          dotnet tool install --global dotnet-ef --version 7.*
+          export PATH="$PATH:$HOME/.dotnet/tools"      
+      
       - name: Run EF Core Migrations on RDS
         run: |
           dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
