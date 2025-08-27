@@ -60,19 +60,40 @@ jobs:
           docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
           docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
       
-      - name: Install dotnet-ef tool
-        run: |
-          dotnet new tool-manifest
-          dotnet tool install --global dotnet-ef --version 8.*
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH      
+      # - name: Install dotnet-ef tool
+      #   run: |
+      #     dotnet new tool-manifest
+      #     dotnet tool install --global dotnet-ef --version 8.*
+      #     echo "$HOME/.dotnet/tools" >> $GITHUB_PATH      
       
-      - name: Run EF Core Migrations on RDS
-        run: |
-          cd SettlyModels
-          dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
-          dotnet ef database update --startup-project ../SettlyApi
-        env:
-          ApiConfigs__DBConnection: ${{ secrets.RDS_CONNECTION_STRING }}
+      # - name: Run EF Core Migrations on RDS
+      #   run: |
+      #     cd SettlyModels
+      #     dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
+      #     dotnet ef database update --startup-project ../SettlyApi
+      #   env:
+      #     ApiConfigs__DBConnection: ${{ secrets.RDS_CONNECTION_STRING }}
+
+      - name: Send SSM Command to EC2 to run EF Core Migrations
+        run: | # Make sure update ec2 public ip in the vpc sg inbound rules for rds access
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Run EF Core Migration" \
+            --parameters 'commands=[
+              "set -e",
+              "sudo yum install -y dotnet-sdk-8.0 || sudo dnf install -y dotnet-sdk-8.0 || true",
+              "dotnet tool list -g | grep dotnet-ef || dotnet tool install --global dotnet-ef --version 8.*",
+              "export PATH=\"$PATH:$HOME/.dotnet/tools\"",
+              "DB_CONN=$(aws ssm get-parameter --name \"ApiConfigs__DBConnection" --with-decryption --query \"Parameter.Value\" --output text)",
+              "export ApiConfigs__DBConnection=\"$DB_CONN\"",
+              "export ASPNETCORE_ENVIRONMENT=Development",
+              "cd /home/ec2-user/settlyai/SettlyAI",
+              "git pull origin main",
+              "cd /home/ec2-user/settlyai/SettlyAI/backend/SettlyModels",
+              "dotnet ef migrations add InitialCreate --startup-project ../SettlyApi",
+              "dotnet ef database update --startup-project ../SettlyApi"
+            ]'
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
