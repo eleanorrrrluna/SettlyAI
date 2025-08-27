@@ -63,12 +63,12 @@ jobs:
       - name: Install dotnet-ef tool
         run: |
           dotnet tool install --global dotnet-ef --version 7.*
-          export PATH="$PATH:$HOME/.dotnet/tools"      
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH      
       
       - name: Run EF Core Migrations on RDS
         run: |
-          dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
-          dotnet ef database update --project SettlyApi/SettlyApi.csproj --startup-project SettlyApi/SettlyApi.csproj --configuration Release
+          dotnet ef migrations add InitialCreate --startup-project ./SettlyApi  
+          dotnet ef database update --startup-project ./SettlyApi
         env:
           ConnectionStrings__DefaultConnection: ${{ secrets.RDS_CONNECTION_STRING }}
 
