@@ -77,7 +77,7 @@ jobs:
       - name: Send SSM Command to EC2 to run EF Core Migrations
         run: | # Make sure update ec2 public ip in the vpc sg inbound rules for rds access
           aws ssm send-command \
-            --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Run EF Core Migration" \
             --parameters 'commands=[
