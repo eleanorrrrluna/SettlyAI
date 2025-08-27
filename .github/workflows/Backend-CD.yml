@@ -62,7 +62,8 @@ jobs:
       
       - name: Install dotnet-ef tool
         run: |
-          dotnet tool install --global dotnet-ef --version 7.*
+          dotnet new tool-manifest
+          dotnet tool install --global dotnet-ef --version 8.*
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH      
       
       - name: Run EF Core Migrations on RDS
