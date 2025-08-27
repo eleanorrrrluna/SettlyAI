@@ -68,8 +68,7 @@ jobs:
       
       - name: Run EF Core Migrations on RDS
         run: |
-          pwd
-          ls
+          cd SettlyModels
           dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
           dotnet ef database update --startup-project ../SettlyApi
         env:
