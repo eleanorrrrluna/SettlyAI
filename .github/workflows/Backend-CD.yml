@@ -68,8 +68,10 @@ jobs:
       
       - name: Run EF Core Migrations on RDS
         run: |
-          dotnet ef migrations add InitialCreate --startup-project ./SettlyApi  
-          dotnet ef database update --startup-project ./SettlyApi
+          pwd
+          ls
+          dotnet ef migrations add InitialCreate --startup-project ../SettlyApi  
+          dotnet ef database update --startup-project ../SettlyApi
         env:
           ApiConfigs__DBConnection: ${{ secrets.RDS_CONNECTION_STRING }}
 
