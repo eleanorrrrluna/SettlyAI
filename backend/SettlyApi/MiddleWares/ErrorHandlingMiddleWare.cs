@@ -36,78 +36,38 @@ public class ErrorHandlingMiddleware
         }
     }
 
+    private static readonly Dictionary<Type, (HttpStatusCode Status, string Message)> ExceptionMap =
+        new()
+        {
+        { typeof(AppException), (HttpStatusCode.BadRequest, "Business exception") },
+        { typeof(ArgumentException), (HttpStatusCode.BadRequest, "Invalid argument provided.") },
+        { typeof(ArgumentNullException), (HttpStatusCode.BadRequest, "Required parameter is missing.") },
+        { typeof(FormatException), (HttpStatusCode.BadRequest, "Invalid data format.") },
+        { typeof(KeyNotFoundException), (HttpStatusCode.NotFound, "The requested resource was not found.") },
+        { typeof(FileNotFoundException), (HttpStatusCode.NotFound, "File not found.") },
+        { typeof(UnauthorizedAccessException), (HttpStatusCode.Unauthorized, "Unauthorized access.") },
+        { typeof(InvalidOperationException), (HttpStatusCode.Conflict, "Operation is invalid in the current state.") },
+        { typeof(TimeoutException), (HttpStatusCode.RequestTimeout, "The request timed out.") },
+        { typeof(NotImplementedException), (HttpStatusCode.NotImplemented, "Feature not implemented.") },
+        { typeof(NotSupportedException), (HttpStatusCode.MethodNotAllowed, "Operation not supported.") },
+        { typeof(IOException), (HttpStatusCode.InternalServerError, "Server error.") },
+        { typeof(DbUpdateException), (HttpStatusCode.InternalServerError, "Database update failed.") }
+        };
+
     private static Task HandleExceptionAsync(HttpContext context, Exception ex, IHostEnvironment env)
     {
-        HttpStatusCode status;
-        string message;
+        HttpStatusCode status = HttpStatusCode.InternalServerError;
+        string message = "An unexpected error occurred.";
 
-        switch (ex)
+        if (ex is AppException appEx)
         {
-            case AppException appEx:
-                status = (HttpStatusCode)appEx.StatusCode;
-                message = appEx.Message;
-                break;
-
-            case UnauthorizedAccessException:
-                status = HttpStatusCode.Unauthorized;
-                message = "Unauthorized access.";
-                break;
-
-            case ArgumentNullException:
-                status = HttpStatusCode.BadRequest;
-                message = "Required parameter is missing.";
-                break;
-
-            case ArgumentException:
-                status = HttpStatusCode.BadRequest;
-                message = "Invalid argument provided.";
-                break;
-
-            case KeyNotFoundException:
-                status = HttpStatusCode.NotFound;
-                message = "The requested resource was not found.";
-                break;
-
-            case InvalidOperationException:
-                status = HttpStatusCode.Conflict;
-                message = "The operation is invalid in the current state.";
-                break;
-
-            case TimeoutException:
-                status = HttpStatusCode.RequestTimeout;
-                message = "The request timed out.";
-                break;
-
-            case FileNotFoundException:
-                status = HttpStatusCode.NotFound;
-                message = "File not found.";
-                break;
-
-            case FormatException:
-                status = HttpStatusCode.BadRequest;
-                message = "Invalid data format.";
-                break;
-
-            case NotImplementedException:
-                status = HttpStatusCode.NotImplemented;
-                message = "Feature not implemented.";
-                break;
-
-            case NotSupportedException:
-                status = HttpStatusCode.MethodNotAllowed;
-                message = "Operation not supported.";
-                break;
-
-            case IOException:
-            case DbUpdateException:
-                status = HttpStatusCode.InternalServerError;
-                message = "Server error.";
-                break;
-            default:
-                status = HttpStatusCode.InternalServerError;
-                message = "An unexpected error occurred.";
-                break;
-
+            status = (HttpStatusCode)appEx.StatusCode;
+            message = appEx.Message;
+        }
+        else if (ExceptionMap.TryGetValue(ex.GetType(), out var map))
+        {
+            status = map.Status;
+            message = map.Message;
         }
 
         context.Response.ContentType = "application/json";
@@ -124,4 +84,5 @@ public class ErrorHandlingMiddleware
         var result = JsonSerializer.Serialize(errorResponse);
         return context.Response.WriteAsync(result);
     }
+
 }
