@@ -34,8 +34,11 @@ public class ErrorHandlingMiddlewareTests
         return context;
     }
 
-    [Fact]
-    public async Task Middleware_Development_ReturnsDetailInResponse()
+    [Theory]
+    [InlineData(typeof(InvalidOperationException), HttpStatusCode.Conflict, "Operation is invalid in the current state.", "Invalid operation for testing")]
+    [InlineData(typeof(FileNotFoundException), HttpStatusCode.NotFound, "File not found.", "Stamp duty JSON file not found.")]
+    [InlineData(typeof(AppException), HttpStatusCode.BadRequest, "Business exception", "Custom business error")]
+    public async Task Middleware_Development_ReturnsExpectedResponse(Type exceptionType, HttpStatusCode expectedStatus, string defaultMessage, string customMessage)
     {
         // Arrange
         var logger = new NullLogger<ErrorHandlingMiddleware>();
@@ -44,14 +47,30 @@ public class ErrorHandlingMiddlewareTests
 
         var middleware = new ErrorHandlingMiddleware(async (innerContext) =>
         {
-            throw new InvalidOperationException("Invalid operation for testing");
+
+            if (exceptionType == typeof(AppException))
+            {
+                throw new AppException(customMessage);
+            }
+            else if (exceptionType == typeof(FileNotFoundException))
+            {
+                throw new FileNotFoundException(customMessage);
+            }
+            else if (exceptionType == typeof(InvalidOperationException))
+            {
+                throw new InvalidOperationException(customMessage);
+            }
+            else
+            {
+                throw (Exception)Activator.CreateInstance(exceptionType)!;
+            }
         }, logger, env);
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert status code
-        Assert.Equal((int)HttpStatusCode.Conflict, context.Response.StatusCode);
+        Assert.Equal((int)expectedStatus, context.Response.StatusCode);
 
         // Assert response body
         context.Response.Body.Seek(0, System.IO.SeekOrigin.Begin);
@@ -64,12 +83,13 @@ public class ErrorHandlingMiddlewareTests
         });
 
         Assert.NotNull(errorResponse);
-        Assert.Equal((int)HttpStatusCode.Conflict, errorResponse!.Code);
-        Assert.Equal("Operation is invalid in the current state.", errorResponse.Message);
+        Assert.Equal((int)expectedStatus, errorResponse!.Code);
+        Assert.Equal(customMessage, errorResponse.Message);
         Assert.Equal(context.TraceIdentifier, errorResponse.TraceId);
 
         // Development mode should include exception detail
-        Assert.Contains("InvalidOperationException", errorResponse.Detail!);
-        Assert.Contains("Invalid operation for testing", errorResponse.Detail!);
+        Assert.NotNull(errorResponse.Detail);
+        Assert.Contains(exceptionType.Name, errorResponse.Detail!);
+        Assert.Contains(customMessage, errorResponse.Detail!);
     }
 }

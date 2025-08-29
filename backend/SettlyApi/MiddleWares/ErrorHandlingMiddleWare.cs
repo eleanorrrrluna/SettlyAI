@@ -36,7 +36,7 @@ public class ErrorHandlingMiddleware
         }
     }
 
-    private static readonly Dictionary<Type, (HttpStatusCode Status, string Message)> ExceptionMap =
+    private static readonly Dictionary<Type, (HttpStatusCode Status, string DefaultMessage)> ExceptionMap =
         new()
         {
         { typeof(AppException), (HttpStatusCode.BadRequest, "Business exception") },
@@ -67,9 +67,8 @@ public class ErrorHandlingMiddleware
         else if (ExceptionMap.TryGetValue(ex.GetType(), out var map))
         {
             status = map.Status;
-            message = map.Message;
+            message = string.IsNullOrWhiteSpace(ex.Message) ? map.DefaultMessage : ex.Message;
         }
-
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)status;
 
