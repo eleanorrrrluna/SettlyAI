@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using SettlyModels;
 
 namespace SettlyApi.Middlewares;
@@ -52,6 +53,11 @@ public class ErrorHandlingMiddleware
                 message = "Unauthorized access.";
                 break;
 
+            case ArgumentNullException:
+                status = HttpStatusCode.BadRequest;
+                message = "Required parameter is missing.";
+                break;
+
             case ArgumentException:
                 status = HttpStatusCode.BadRequest;
                 message = "Invalid argument provided.";
@@ -72,10 +78,36 @@ public class ErrorHandlingMiddleware
                 message = "The request timed out.";
                 break;
 
+            case FileNotFoundException:
+                status = HttpStatusCode.NotFound;
+                message = "File not found.";
+                break;
+
+            case FormatException:
+                status = HttpStatusCode.BadRequest;
+                message = "Invalid data format.";
+                break;
+
+            case NotImplementedException:
+                status = HttpStatusCode.NotImplemented;
+                message = "Feature not implemented.";
+                break;
+
+            case NotSupportedException:
+                status = HttpStatusCode.MethodNotAllowed;
+                message = "Operation not supported.";
+                break;
+
+            case IOException:
+            case DbUpdateException:
+                status = HttpStatusCode.InternalServerError;
+                message = "Server error.";
+                break;
             default:
                 status = HttpStatusCode.InternalServerError;
                 message = "An unexpected error occurred.";
                 break;
+
         }
 
         context.Response.ContentType = "application/json";
