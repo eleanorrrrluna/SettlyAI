@@ -28,4 +28,12 @@
      <ProjectReference Include="..\SettlyApi\SettlyApi.csproj" />
   </ItemGroup>
 
+<ItemGroup>
+  <None Update="Data\vic_stamp_duty.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+</ItemGroup>
+
+
+
 </Project>
