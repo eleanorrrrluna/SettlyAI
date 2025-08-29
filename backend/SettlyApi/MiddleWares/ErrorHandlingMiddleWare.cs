@@ -85,7 +85,7 @@ public class ErrorHandlingMiddleware
         {
             Code = context.Response.StatusCode,
             Message = message,
-            Detail = env.IsDevelopment() ? ex.ToString() : null, 
+            Detail = env.IsDevelopment() ? ex.ToString() : null,
             TraceId = context.TraceIdentifier
         };
 
