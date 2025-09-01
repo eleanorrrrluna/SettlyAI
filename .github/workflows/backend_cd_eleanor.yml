@@ -3,10 +3,10 @@ name: Backend CD
 on:
   push:
     #branches: [ main ]
-    paths:
+    #paths:
     #  - 'backend/**'
   pull_request:
-    paths:
+    #paths:
     #   - 'backend/**'
 
 permissions:
