@@ -2,7 +2,7 @@ import { Box, type BoxProps } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Typography, Button, Divider, CircularProgress } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { FormInput} from './component/FormInput';
+import { FormInput } from './component/FormInput';
 import { FormCheckbox } from './component/FormCheckbox';
 import { SocialLoginButtons } from './component/SocialLoginButtons';
 import { useForm, useWatch } from 'react-hook-form';
@@ -23,14 +23,8 @@ const userFormSchema = z
       .string()
       .min(8, 'Password must be at least 8 characters')
       .max(100, 'Password must be no more than 100 characters')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-        'Password must include uppercase, lowercase, and number'
-      )
-      .regex(
-        /[^A-Za-z0-9]/,
-        'Password must include at least one special character'
-      ),
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, 'Password must include uppercase, lowercase, and number')
+      .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character'),
     confirmPassword: z.string(),
     acceptTerms: z.boolean().refine(v => v, { message: 'Please accept Terms' }),
   })
@@ -39,9 +33,7 @@ const userFormSchema = z
     message: 'Passwords do not match',
   });
 
-const RegistrationFormContainer = styled(Box)<
-  BoxProps & React.ComponentProps<'form'>
->(({ theme }) => ({
+const RegistrationFormContainer = styled(Box)<BoxProps & React.ComponentProps<'form'>>(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -96,11 +88,7 @@ export const RegistrationForm = () => {
   });
   const passwordValue = useWatch({ control, name: 'password' });
 
-  const { mutate, isPending } = useMutation<
-    IUser,
-    AxiosError,
-    z.infer<typeof userFormSchema>
-  >({
+  const { mutate, isPending } = useMutation<IUser, AxiosError, z.infer<typeof userFormSchema>>({
     mutationFn: data =>
       registerUser({
         fullName: data.fullName,
@@ -128,12 +116,7 @@ export const RegistrationForm = () => {
   });
 
   return isPending ? (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="300px"
-    >
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
       <CircularProgress />
     </Box>
   ) : (
@@ -165,28 +148,16 @@ export const RegistrationForm = () => {
         type="password"
         onFocus={() => setShowPasswordStrength(true)}
         onBlur={() => setShowPasswordStrength(false)}
-        helperText={
-          showPasswordStrength ? (
-            <PasswordStrength value={passwordValue} />
-          ) : null
-        }
+        helperText={showPasswordStrength ? <PasswordStrength value={passwordValue} /> : null}
       />
-      <FormInput
-        label="Confirm Password"
-        name="confirmPassword"
-        control={control}
-        type="password"
-      />
+      <FormInput label="Confirm Password" name="confirmPassword" control={control} type="password" />
 
       <FormCheckbox
         name="acceptTerms"
         control={control}
         label={
           <Typography variant="p1" component="span">
-            I agree to the{' '}
-            <TextButton type="button">
-              Terms of Service and Privacy Policy
-            </TextButton>
+            I agree to the <TextButton type="button">Terms of Service and Privacy Policy</TextButton>
           </Typography>
         }
       />

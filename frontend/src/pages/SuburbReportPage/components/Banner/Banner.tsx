@@ -57,7 +57,6 @@ const Subtitle = styled(Typography)(({ theme }) => ({
   },
 }));
 
-
 interface BannerProps {
   suburb?: string;
   state?: string;
