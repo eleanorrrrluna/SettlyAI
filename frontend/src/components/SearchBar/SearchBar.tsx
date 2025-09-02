@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as React from 'react';
-import { TextField, Box, Typography, InputAdornment, Container } from '@mui/material';
+import { TextField, Box, Typography, InputAdornment } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import SearchIcon from '@mui/icons-material/Search';
 import { styled } from '@mui/material/styles';
@@ -35,7 +35,7 @@ const StyledAutocomplete = styled(Autocomplete<Option, false, false, true>)(({ t
   width: '100%',
 }));
 
-const SearchBarContainer = styled(Box)(({ theme }) => ({
+const SearchBarContainer = styled(Box)(() => ({
   width: '100%',
   marginLeft: 'auto',
   marginright: 'auto',
@@ -63,15 +63,24 @@ const ReportButton = styled(GlobalButton)(({ theme }) => ({
 }));
 
 type ISearchBarProps = {
-  selected: Option | null;
-  handleSelected: (value: Option | null) => void;
-  handleGetReport?: () => void;
+  onSuburbSelected?: (suburbData: SuggestionOutputDto) => void;
 };
 
-const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProps) => {
+const SearchBar = ({ onSuburbSelected }: ISearchBarProps) => {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
+  const [selected, setSelected] = useState<Option | null>(null);
   const debouncedQuery = useDebouncedValue(query, 500);
+
+  const handleSelected = (value: Option | null) => {
+    setSelected(value);
+  };
+
+  const handleGetReport = () => {
+    if (selected && onSuburbSelected) {
+      onSuburbSelected(selected);
+    }
+  };
 
   const trimmedQuery = debouncedQuery.trim();
   const { data: options = [], isFetching } = useQuery<SuggestionOutputDto[]>({
@@ -128,6 +137,7 @@ const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProp
         }}
         noOptionsText=""
         renderOption={(props, option) => {
+          // eslint-disable-next-line react/prop-types
           const { key, ...optionProps } = props;
           return (
             <li key={key} {...optionProps}>

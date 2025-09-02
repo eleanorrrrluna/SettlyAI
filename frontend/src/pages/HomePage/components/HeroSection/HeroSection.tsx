@@ -1,7 +1,7 @@
 import { Box, Button, Typography, styled, useTheme, type ButtonProps } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import SearchBar from '../../../../components/Search/SearchBar';
+import SearchBar from '../../../../components/SearchBar/SearchBar';
 import type { SuggestionOutputDto } from '@/interfaces/searchSuggestion';
 import { Link as RouterLink, type LinkProps as RouterLinkProps } from 'react-router-dom';
 
@@ -18,7 +18,7 @@ const HeroContainer = styled('section')(({ theme }) => ({
   [theme.breakpoints.up('md')]: { paddingInline: 0 },
 }));
 
-const BottomContainer = styled(Box)(({ theme }) => ({
+const BottomContainer = styled(Box)(() => ({
   marginLeft: 'auto',
   marginRight: 'auto',
   width: '100%',
@@ -45,21 +45,17 @@ type LinkButtonProps = ButtonProps & {
 const HeroSection = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  //State passed to sub-component Searchbar for receiving the user's selected option data from the suggestion list(Backend SearchSuggest Api)
-  const [selected, setSelected] = useState<SuggestionOutputDto | null>(null);
+  //State to track selected suburb for ExploreButton path construction
+  const [selectedSuburb, setSelectedSuburb] = useState<SuggestionOutputDto | null>(null);
 
-  const handleSelected = () => {
-    setSelected(selected);
-  };
-
-  //Handle function passing suburbId data (received from the above state "selected", from the Backend SearchSuggest Api) as parameter for navigating to Suburb Report page
-  const handleGetReport = () => {
-    if (!selected) return;
-    navigate(`/suburb/${selected.suburbId}`);
+  //Handle suburb selection from SearchBar - updates state and navigates to report page
+  const handleSuburbSelected = (suburbData: SuggestionOutputDto) => {
+    setSelectedSuburb(suburbData);
+    navigate(`/suburb/${suburbData.suburbId}`);
   };
 
   //Explore Page is currently a placeholder, the page will be developed in the future
-  const explorePagePath = selected ? `/explore/${encodeURIComponent(selected.name)}` : '/explore';
+  const explorePagePath = selectedSuburb ? `/explore/${encodeURIComponent(selectedSuburb.name)}` : '/explore';
 
   return (
     <HeroContainer>
@@ -79,7 +75,7 @@ const HeroSection = () => {
       </Typography>
 
       <BottomContainer>
-        <SearchBar selected={selected} handleSelected={setSelected} handleGetReport={handleGetReport} />
+        <SearchBar onSuburbSelected={handleSuburbSelected} />
 
         <ExploreButton component={RouterLink} to={explorePagePath}>
           Not sure where to begin? Explore suburbs that match your lifestyle
