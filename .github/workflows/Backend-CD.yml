@@ -15,7 +15,7 @@ permissions:
 
 env:
   AWS_REGION: ap-southeast-2
-  ECR_REPOSITORY: settlyai-backend
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
   IMAGE_TAG: latest
   AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
