@@ -57,19 +57,6 @@ const Subtitle = styled(Typography)(({ theme }) => ({
   },
 }));
 
-// const SearchPlaceholder = styled(Box)(() => ({
-//   width: '100%',
-//   maxWidth: '600px',
-//   height: '60px',
-//   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-//   borderRadius: '12px',
-//   border: '1px solid rgba(255, 255, 255, 0.2)',
-//   display: 'flex',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   margin: '0 auto',
-//   backdropFilter: 'blur(10px)',
-// }));
 
 interface BannerProps {
   suburb?: string;
