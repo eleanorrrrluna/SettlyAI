@@ -105,6 +105,7 @@ export const VerificationPage = () => {
     }
     return null;
   };
+
   return (
     <FormPageContainer>
       <FormContainer
@@ -141,7 +142,7 @@ export const VerificationPage = () => {
             inputLabel: {
               sx: theme => ({
                 ...theme.typography.body2,
-                color: 'grey.500',
+                color: theme.palette.grey[500],
               }),
             },
             input: {
