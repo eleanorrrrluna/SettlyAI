@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as React from 'react';
-import { TextField, Box, Typography, InputAdornment, Container } from '@mui/material';
+import { TextField, Box, Typography, InputAdornment } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import SearchIcon from '@mui/icons-material/Search';
 import { styled } from '@mui/material/styles';
@@ -31,11 +31,11 @@ export const useDebouncedValue = <T,>(value: T, delay = 300): T => {
 type Option = SuggestionOutputDto;
 
 //Styling for the Autocomplete & ReportButton Wrap
-const StyledAutocomplete = styled(Autocomplete<Option, false, false, true>)(({ theme }) => ({
+const StyledAutocomplete = styled(Autocomplete<Option, false, false, true>)(() => ({
   width: '100%',
 }));
 
-const SearchBarContainer = styled(Box)(({ theme }) => ({
+const SearchBarContainer = styled(Box)(() => ({
   width: '100%',
   marginLeft: 'auto',
   marginright: 'auto',
@@ -43,7 +43,7 @@ const SearchBarContainer = styled(Box)(({ theme }) => ({
   minwidth: { md: 650 },
 }));
 
-const ReportButton = styled(GlobalButton)(({ theme }) => ({
+const ReportButton = styled(GlobalButton)<{ $breakpoint: number }>(({ theme, $breakpoint }) => ({
   position: 'absolute',
   left: '100%',
   top: '50%',
@@ -51,27 +51,37 @@ const ReportButton = styled(GlobalButton)(({ theme }) => ({
   height: 56,
   fontSize: theme.typography.subtitle1.fontSize,
   borderRadius: 14,
-  [theme.breakpoints.down(1200)]: {
+  [theme.breakpoints.down($breakpoint)]: {
     position: 'static',
     transform: 'none',
     width: '100%',
     marginTop: theme.spacing(4),
   },
-  [theme.breakpoints.up(1200)]: {
+  [theme.breakpoints.up($breakpoint)]: {
     marginLeft: theme.spacing(6),
   },
 }));
 
 type ISearchBarProps = {
-  selected: Option | null;
-  handleSelected: (value: Option | null) => void;
-  handleGetReport?: () => void;
+  onSuburbSelected?: (suburbData: SuggestionOutputDto) => void;
+  breakpoint?: number;
 };
 
-const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProps) => {
+const SearchBar = ({ onSuburbSelected, breakpoint = 1200 }: ISearchBarProps) => {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
+  const [selected, setSelected] = useState<Option | null>(null);
   const debouncedQuery = useDebouncedValue(query, 500);
+
+  const handleSelected = (value: Option | null) => {
+    setSelected(value);
+  };
+
+  const handleGetReport = () => {
+    if (selected && onSuburbSelected) {
+      onSuburbSelected(selected);
+    }
+  };
 
   const trimmedQuery = debouncedQuery.trim();
   const { data: options = [], isFetching } = useQuery<SuggestionOutputDto[]>({
@@ -128,6 +138,7 @@ const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProp
         }}
         noOptionsText=""
         renderOption={(props, option) => {
+          // eslint-disable-next-line react/prop-types
           const { key, ...optionProps } = props;
           return (
             <li key={key} {...optionProps}>
@@ -153,8 +164,12 @@ const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProp
             onBlur={() => setFocused(false)}
             sx={theme => ({
               '& .MuiOutlinedInput-root': {
+                backgroundColor: theme.palette.common.white,
                 borderRadius: theme.shape.borderRadius,
-                '& fieldset': { borderRadius: 'inherit' },
+                overflow: 'hidden',
+                '& fieldset': {
+                  borderRadius: 'inherit',
+                },
               },
             })}
             InputProps={{
@@ -172,7 +187,7 @@ const SearchBar = ({ selected, handleSelected, handleGetReport }: ISearchBarProp
         )}
       />
 
-      <ReportButton onClick={handleGetReport} variant="contained">
+      <ReportButton onClick={handleGetReport} variant="contained" $breakpoint={breakpoint}>
         Get my report
       </ReportButton>
     </SearchBarContainer>
