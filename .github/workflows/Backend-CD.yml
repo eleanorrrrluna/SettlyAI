@@ -84,7 +84,7 @@ jobs:
               "dotnet ef migrations add InitialCreate --startup-project ../SettlyApi",
               "dotnet ef database update --startup-project ../SettlyApi"
             ]'
-
+      # add 0.0.0.0/0 port range 22 (for github) to the rds sg inbound rules for testing only, remove later
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
