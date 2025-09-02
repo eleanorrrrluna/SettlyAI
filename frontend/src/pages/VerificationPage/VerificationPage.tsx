@@ -29,10 +29,7 @@ export const VerificationPage = () => {
   >({
     mutationFn: verifyEmail,
     onSuccess: () => {
-      navigate('/dashboard'); // 验证成功后跳转到仪表板或登录页
-    },
-    onError: () => {
-      // React Query会自动管理error状态
+      navigate('/login');
     },
   });
 
@@ -43,12 +40,6 @@ export const VerificationPage = () => {
     number
   >({
     mutationFn: resendVerificationCode,
-    onSuccess: () => {
-      // 可以显示成功消息
-    },
-    onError: () => {
-      // React Query会自动管理error状态
-    },
   });
 
   const handleVerificationCodeChange = (
@@ -59,7 +50,7 @@ export const VerificationPage = () => {
 
   const handleVerificationCodeSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     const result = verificationCodeSchema.safeParse(verificationCode);
     if (!result.success || !userId) {
       return;
@@ -68,7 +59,7 @@ export const VerificationPage = () => {
     verifyMutation.mutate({
       userId: parseInt(userId, 10),
       code: result.data,
-      verificationType: 1, // 邮箱验证类型
+      verificationType: 1,
     });
   };
 
@@ -77,22 +68,27 @@ export const VerificationPage = () => {
     resendMutation.mutate(parseInt(userId, 10));
   };
 
-  // 获取错误信息的helper函数
-  const getErrorMessage = () => {
+  const getMessage = () => {
+    if (resendMutation.isSuccess) {
+      return { type: 'success', text: 'Verification code sent successfully!' };
+    }
+
     if (verifyMutation.error) {
-      return verifyMutation.error.response?.status === 400 
-        ? 'Invalid or expired verification code'
-        : 'Verification failed. Please try again.';
+      const text =
+        verifyMutation.error.response?.status === 400
+          ? 'Invalid or expired verification code'
+          : 'Verification failed. Please try again.';
+      return { type: 'error', text };
     }
     if (resendMutation.error) {
-      return 'Failed to resend verification code';
+      return { type: 'error', text: 'Failed to resend verification code' };
     }
     const result = verificationCodeSchema.safeParse(verificationCode);
     if (verificationCode && !result.success) {
-      return 'Verification code must be 6 digits';
+      return { type: 'error', text: 'Verification code must be 6 digits' };
     }
     if (!userId) {
-      return 'User ID is missing';
+      return { type: 'error', text: 'User ID is missing' };
     }
     return null;
   };
@@ -115,14 +111,17 @@ export const VerificationPage = () => {
         >
           Check your inbox for a 6-digit code and enter it below.
         </Typography>
-        
-        {/* 错误信息显示 */}
-        {getErrorMessage() && (
-          <Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>
-            {getErrorMessage()}
+
+        {/* 消息显示 */}
+        {getMessage() && (
+          <Typography
+            color={getMessage()?.type === 'error' ? 'error' : 'success'}
+            sx={{ mb: 2, textAlign: 'center' }}
+          >
+            {getMessage()?.text}
           </Typography>
         )}
-        
+
         <TextField
           value={verificationCode}
           fullWidth
@@ -144,7 +143,7 @@ export const VerificationPage = () => {
           }}
           onChange={handleVerificationCodeChange}
         />
-        
+
         <GlobalButton
           type="submit"
           width="full"
@@ -160,10 +159,10 @@ export const VerificationPage = () => {
             'Continue'
           )}
         </GlobalButton>
-        
+
         <Typography variant="p1" component="p" textAlign="center" marginTop={6}>
           Can&apos;t find it? Check your spam folder.{'  '}
-          <TextButton 
+          <TextButton
             onClick={handleResendCode}
             disabled={resendMutation.isPending}
           >
