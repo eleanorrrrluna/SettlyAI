@@ -1,12 +1,15 @@
 import { Grid, Stack, Typography, useMediaQuery, useTheme, styled } from '@mui/material';
 import PropertyMetricCard from './components/PropertyMetricCard';
 import type { PropertyMetricItem } from './components/PropertyMetricCard';
-
 const SectionWrapper = styled(Stack)(({ theme }) => ({
   width: '100%',
   overflow: 'hidden',
   flexDirection: 'column',
   gap: theme.spacing(8),
+}));
+const GridContainer = styled(Grid)(({ columns }) => ({
+  display: 'grid',
+  gridTemplateColumns: `repeat(${columns}, 1fr)`,
 }));
 const PropertyMarketInsightsSection = ({
   title = 'Property Market Insights',
@@ -18,7 +21,6 @@ const PropertyMarketInsightsSection = ({
   const theme = useTheme();
   const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
   const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
-
   let columns = 3;
   if (isSmDown) {
     columns = 1;
@@ -28,20 +30,11 @@ const PropertyMarketInsightsSection = ({
   return (
     <SectionWrapper>
       <Typography variant="h4">{title}</Typography>
-
-      <Grid
-        container
-        spacing={6}
-        columns={columns}
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        }}
-      >
+      <GridContainer container spacing={6} columns={columns}>
         {items.map((item, index) => (
           <PropertyMetricCard key={index} {...item} />
         ))}
-      </Grid>
+      </GridContainer>
     </SectionWrapper>
   );
 };
