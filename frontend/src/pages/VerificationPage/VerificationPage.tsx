@@ -8,7 +8,7 @@ import { useState, type ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
-import { verifyEmail, resendVerificationCode } from '@/api/authApi';
+import { verifyEmail, sendVerificationCode } from '@/api/authApi';
 import type { IVerifyEmailRequest } from '@/interfaces/user';
 import { z } from 'zod';
 
@@ -39,7 +39,7 @@ export const VerificationPage = () => {
     AxiosError,
     number
   >({
-    mutationFn: resendVerificationCode,
+    mutationFn: (userId: number) => sendVerificationCode(userId, 1),
   });
 
   const handleVerificationCodeChange = (

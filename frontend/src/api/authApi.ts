@@ -7,11 +7,17 @@ export const registerUser = async (userData: IUser) => {
 };
 
 export const verifyEmail = async (data: IVerifyEmailRequest) => {
-  const response = await httpClient.post('/api/auth/verify-email', data);
+  const response = await httpClient.post('/auth/activate', data);
   return response.data;
 };
 
-export const resendVerificationCode = async (userId: number) => {
-  const response = await httpClient.post('/api/auth/resend-verification', { userId });
+export const sendVerificationCode = async (
+  userId: number,
+  verificationType: number
+) => {
+  const response = await httpClient.post('/auth/send-verification-code', {
+    userId,
+    verificationType,
+  });
   return response.data;
 };
