@@ -100,7 +100,7 @@ const Banner = ({ suburb, state, postcode }: BannerProps) => {
       <ContentContainer>
         <MainTitle variant="h1">{displayTitle}</MainTitle>
         <Subtitle variant="body2">Smart data to help you decide — from affordability to growth to lifestyle.</Subtitle>
-        <SearchBar onSuburbSelected={handleSuburbSelected} />
+        <SearchBar onSuburbSelected={handleSuburbSelected} breakpoint={1350} />
       </ContentContainer>
     </BannerContainer>
   );

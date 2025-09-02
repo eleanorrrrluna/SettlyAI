@@ -31,7 +31,7 @@ export const useDebouncedValue = <T,>(value: T, delay = 300): T => {
 type Option = SuggestionOutputDto;
 
 //Styling for the Autocomplete & ReportButton Wrap
-const StyledAutocomplete = styled(Autocomplete<Option, false, false, true>)(({ theme }) => ({
+const StyledAutocomplete = styled(Autocomplete<Option, false, false, true>)(() => ({
   width: '100%',
 }));
 
@@ -43,7 +43,7 @@ const SearchBarContainer = styled(Box)(() => ({
   minwidth: { md: 650 },
 }));
 
-const ReportButton = styled(GlobalButton)(({ theme }) => ({
+const ReportButton = styled(GlobalButton)<{ $breakpoint: number }>(({ theme, $breakpoint }) => ({
   position: 'absolute',
   left: '100%',
   top: '50%',
@@ -51,22 +51,23 @@ const ReportButton = styled(GlobalButton)(({ theme }) => ({
   height: 56,
   fontSize: theme.typography.subtitle1.fontSize,
   borderRadius: 14,
-  [theme.breakpoints.down(1200)]: {
+  [theme.breakpoints.down($breakpoint)]: {
     position: 'static',
     transform: 'none',
     width: '100%',
     marginTop: theme.spacing(4),
   },
-  [theme.breakpoints.up(1200)]: {
+  [theme.breakpoints.up($breakpoint)]: {
     marginLeft: theme.spacing(6),
   },
 }));
 
 type ISearchBarProps = {
   onSuburbSelected?: (suburbData: SuggestionOutputDto) => void;
+  breakpoint?: number;
 };
 
-const SearchBar = ({ onSuburbSelected }: ISearchBarProps) => {
+const SearchBar = ({ onSuburbSelected, breakpoint = 1200 }: ISearchBarProps) => {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<Option | null>(null);
@@ -163,8 +164,12 @@ const SearchBar = ({ onSuburbSelected }: ISearchBarProps) => {
             onBlur={() => setFocused(false)}
             sx={theme => ({
               '& .MuiOutlinedInput-root': {
+                backgroundColor: theme.palette.common.white,
                 borderRadius: theme.shape.borderRadius,
-                '& fieldset': { borderRadius: 'inherit' },
+                overflow: 'hidden',
+                '& fieldset': {
+                  borderRadius: 'inherit',
+                },
               },
             })}
             InputProps={{
@@ -182,7 +187,7 @@ const SearchBar = ({ onSuburbSelected }: ISearchBarProps) => {
         )}
       />
 
-      <ReportButton onClick={handleGetReport} variant="contained">
+      <ReportButton onClick={handleGetReport} variant="contained" $breakpoint={breakpoint}>
         Get my report
       </ReportButton>
     </SearchBarContainer>
