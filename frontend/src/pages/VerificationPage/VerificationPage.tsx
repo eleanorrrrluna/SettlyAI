@@ -11,10 +11,24 @@ import type { AxiosError } from 'axios';
 import { verifyEmail, sendVerificationCode } from '@/api/authApi';
 import type { IVerifyEmailRequest } from '@/interfaces/user';
 import { z } from 'zod';
+import { styled } from '@mui/material/styles';
 
 const verificationCodeSchema = z
   .string()
   .regex(/^\d{6}$/, 'Verification code must be 6 digits');
+
+interface MessageProps {
+  type: 'error' | 'success';
+}
+
+const MessageText = styled(Typography, {
+  shouldForwardProp: prop => prop !== 'type',
+})<MessageProps>(({ theme, type }) => ({
+  marginBottom: theme.spacing(2),
+  textAlign: 'center',
+  color:
+    type === 'error' ? theme.palette.error.main : theme.palette.success.main,
+}));
 
 export const VerificationPage = () => {
   const { userId } = useParams();
@@ -33,7 +47,6 @@ export const VerificationPage = () => {
     },
   });
 
-  // 重新发送验证码mutation
   const resendMutation = useMutation<
     { success: boolean; message?: string },
     AxiosError,
@@ -103,23 +116,17 @@ export const VerificationPage = () => {
         <Typography variant="h4" component="h3" marginBottom={4}>
           Check your email for a code
         </Typography>
-        <Typography
-          variant="body2"
-          component="p"
-          marginBottom={6}
-          textAlign="center"
-        >
+        <Typography variant="body2" marginBottom={6} textAlign="center">
           Check your inbox for a 6-digit code and enter it below.
         </Typography>
 
         {/* 消息显示 */}
         {getMessage() && (
-          <Typography
-            color={getMessage()?.type === 'error' ? 'error' : 'success'}
-            sx={{ mb: 2, textAlign: 'center' }}
+          <MessageText
+            type={getMessage()?.type === 'error' ? 'error' : 'success'}
           >
             {getMessage()?.text}
-          </Typography>
+          </MessageText>
         )}
 
         <TextField
@@ -160,7 +167,7 @@ export const VerificationPage = () => {
           )}
         </GlobalButton>
 
-        <Typography variant="p1" component="p" textAlign="center" marginTop={6}>
+        <Typography paddingTop={6} variant="p1">
           Can&apos;t find it? Check your spam folder.{'  '}
           <TextButton
             onClick={handleResendCode}
