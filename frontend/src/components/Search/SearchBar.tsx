@@ -51,13 +51,13 @@ const ReportButton = styled(GlobalButton)(({ theme }) => ({
   height: 56,
   fontSize: theme.typography.subtitle1.fontSize,
   borderRadius: 14,
-  [theme.breakpoints.down('md')]: {
+  [theme.breakpoints.down(1200)]: {
     position: 'static',
     transform: 'none',
     width: '100%',
     marginTop: theme.spacing(4),
   },
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up(1200)]: {
     marginLeft: theme.spacing(6),
   },
 }));
