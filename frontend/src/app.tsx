@@ -32,7 +32,7 @@ const App = () => {
           </Route>
           <Route path="/" element={<ThemeDemo />} />
           <Route path="/registration" element={<RegistrationPage />} />
-          <Route path="/verify-email" element={<VerificationPage />} />
+          <Route path="/verify-email/:userId" element={<VerificationPage />} />
         </Routes>
       </ThemeProvider>
     </QueryClientProvider>

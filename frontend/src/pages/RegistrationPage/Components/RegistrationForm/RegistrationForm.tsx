@@ -2,7 +2,7 @@ import { Box, type BoxProps } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Typography, Button, Divider, CircularProgress } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { FormInput} from './component/FormInput';
+import { FormInput } from './component/FormInput';
 import { FormCheckbox } from './component/FormCheckbox';
 import { SocialLoginButtons } from './component/SocialLoginButtons';
 import { useForm, useWatch } from 'react-hook-form';
@@ -13,7 +13,7 @@ import type { AxiosError } from 'axios';
 import { PasswordStrength } from './component/PasswordStrength';
 import { useState } from 'react';
 import { registerUser } from '@/api/authApi';
-import type { IUser } from '@/interfaces/user';
+import type { IUserResponse } from '@/interfaces/user';
 
 const userFormSchema = z
   .object({
@@ -97,7 +97,7 @@ export const RegistrationForm = () => {
   const passwordValue = useWatch({ control, name: 'password' });
 
   const { mutate, isPending } = useMutation<
-    IUser,
+    IUserResponse,
     AxiosError,
     z.infer<typeof userFormSchema>
   >({
@@ -106,11 +106,12 @@ export const RegistrationForm = () => {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
+        verificationType: 1,
       }),
 
-    onSuccess: () => {
+    onSuccess: user => {
       reset();
-      navigate('/verify-email');
+      navigate(`/verify-email/${user.id}`);
     },
 
     onError: (error: AxiosError) => {
