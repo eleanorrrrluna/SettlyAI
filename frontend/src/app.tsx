@@ -8,6 +8,7 @@ import SuburbReportPage from './pages/SuburbReportPage';
 import Layout from './components/Layout/Layout';
 import './App.css';
 import { RegistrationPage } from './pages/RegistrationPage';
+import { VerificationPage } from './pages/VerificationPage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ const App = () => {
           </Route>
           <Route path="/" element={<ThemeDemo />} />
           <Route path="/registration" element={<RegistrationPage />} />
+          <Route path="/verify-email" element={<VerificationPage />} />
         </Routes>
       </ThemeProvider>
     </QueryClientProvider>
