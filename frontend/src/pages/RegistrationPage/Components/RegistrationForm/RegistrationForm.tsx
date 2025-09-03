@@ -148,8 +148,9 @@ export const RegistrationForm = () => {
         name="password"
         control={control}
         type="password"
+        trigger={trigger}
+        hideError={true}
         onFocus={() => setShowPasswordStrength(true)}
-        // onBlur={() => setShowPasswordStrength(false)}
         helperText={showPasswordStrength ? <PasswordStrength value={passwordValue} /> : null}
       />
       <FormInput label="Confirm Password" name="confirmPassword" control={control} type="password" />

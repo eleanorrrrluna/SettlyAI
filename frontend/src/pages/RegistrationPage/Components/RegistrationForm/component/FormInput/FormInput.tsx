@@ -6,9 +6,10 @@ interface FormInputProps extends Omit<TextFieldProps, 'name'> {
   control: Control<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   rules?: RegisterOptions;
   trigger?: (name: any) => Promise<boolean>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  hideError?: boolean;
 }
 
-export const FormInput = ({ name, control, rules, helperText, trigger, ...props }: FormInputProps) => {
+export const FormInput = ({ name, control, rules, helperText, trigger, hideError, ...props }: FormInputProps) => {
   return (
     <Controller
       name={name}
@@ -20,22 +21,24 @@ export const FormInput = ({ name, control, rules, helperText, trigger, ...props 
           {...field}
           onChange={async e => {
             field.onChange(e);
-            // 如果有错误，立即重新验证
             if (error && trigger) {
               await trigger(name);
             }
           }}
           onBlur={e => {
             field.onBlur();
-            console.log('onBlur triggered:', e.target.value);
-            console.log('Current error:', error);
           }}
           fullWidth
           size="small"
           margin="normal"
           variant="outlined"
-          error={!!error}
-          helperText={error ? error.message : helperText}
+          error={!hideError && !!error}
+          helperText={!hideError && error ? error.message : helperText}
+          slotProps={{
+            formHelperText: {
+              component: 'div'
+            }
+          }}
         />
       )}
     />
