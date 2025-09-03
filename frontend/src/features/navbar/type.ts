@@ -1,5 +1,5 @@
 export type NavPosition = 'left' | 'center' | 'right';
-export type NavVariant = 'brand' | 'text' | 'contained';
+export type NavVariant = 'brand' | 'link' | 'menu' | 'text' | 'contained';
 
 export interface NavItem {
   id: string;
