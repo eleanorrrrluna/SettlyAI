@@ -5,9 +5,10 @@ interface FormInputProps extends Omit<TextFieldProps, 'name'> {
   name: string;
   control: Control<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   rules?: RegisterOptions;
+  trigger?: (name: any) => Promise<boolean>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export const FormInput = ({ name, control, rules, helperText, ...props }: FormInputProps) => {
+export const FormInput = ({ name, control, rules, helperText, trigger, ...props }: FormInputProps) => {
   return (
     <Controller
       name={name}
@@ -15,8 +16,20 @@ export const FormInput = ({ name, control, rules, helperText, ...props }: FormIn
       rules={rules}
       render={({ field, fieldState: { error } }) => (
         <TextField
-          {...field}
           {...props}
+          {...field}
+          onChange={async e => {
+            field.onChange(e);
+            // 如果有错误，立即重新验证
+            if (error && trigger) {
+              await trigger(name);
+            }
+          }}
+          onBlur={e => {
+            field.onBlur();
+            console.log('onBlur triggered:', e.target.value);
+            console.log('Current error:', error);
+          }}
           fullWidth
           size="small"
           margin="normal"
