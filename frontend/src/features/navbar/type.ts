@@ -8,4 +8,5 @@ export interface NavItem {
   position: NavPosition;
   order: number;
   variant?: NavVariant;
+  subItems?: NavItem[];
 }
