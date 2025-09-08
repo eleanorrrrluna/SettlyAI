@@ -119,7 +119,7 @@ const renderGlobalNavButton: React.FC<RenderGlobalNavButtonArgs> = args => {
           key={item.id}
           to={to}
           variant="text"
-          sx={{ width: 90, ...(typographyByVariant(item.variant) || {}), color: 'text.secondary' }}
+          sx={theme => ({ width: 90, ...(typographyByVariant(item.variant) || {}), color: 'text.secondary' })}
           onPointerEnter={openFeatureButtonMenu}
           onPointerLeave={e => {
             const featureButton = e.relatedTarget instanceof Element ? e.relatedTarget : null;
@@ -139,9 +139,9 @@ const renderGlobalNavButton: React.FC<RenderGlobalNavButtonArgs> = args => {
               if (featureButton && featureButtonHover?.contains(featureButton)) return;
               menuTimerRestart();
             }}
-            sx={{
+            sx={theme => ({
               minWidth: featureButtonWidth ?? undefined,
-            }}
+            })}
           >
             {item.subItems?.map(subItem => (
               <MenuItemRow key={subItem.id} component={RouterLink} to={subItem.path} onClick={awayFeatureButton}>
@@ -213,7 +213,16 @@ const MenuItemRow = styled(MenuItem)(({ theme }) => ({
 
 //Styling for Brand logo
 const BrandLogo = () => (
-  <Box sx={{ width: 40, height: 40, borderRadius: '8px', placeItems: 'center', bgcolor: '#7B61FF', display: 'grid' }}>
+  <Box
+    sx={theme => ({
+      width: 40,
+      height: 40,
+      borderRadius: '8px',
+      placeItems: 'center',
+      bgcolor: '#7B61FF',
+      display: 'grid',
+    })}
+  >
     <HomeRounded sx={{ color: 'common.white' }} fontSize="medium" />
   </Box>
 );
@@ -224,14 +233,14 @@ const renderBrandLogo = (item: NavItem) => {
     <Typography
       component={'span'}
       key={id}
-      sx={{
+      sx={theme => ({
         ...typographyByVariant(item.variant),
         color: 'text.primary',
         lineHeight: theme => theme.typography.button.lineHeight,
         display: 'flex',
         alignItems: 'center',
         gap: 2,
-      }}
+      })}
     >
       <BrandLogo />
       {label}
