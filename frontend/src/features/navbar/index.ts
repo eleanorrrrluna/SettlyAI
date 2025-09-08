@@ -1,1 +1,1 @@
-export type { NavItem, NavVariant } from './type';
+export type { NavItem, NavVariant, RenderGlobalNavButtonArgs } from './type';
