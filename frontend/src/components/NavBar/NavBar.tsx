@@ -241,7 +241,6 @@ const renderBrandLogo = (item: NavItem) => {
 
 const Navbar = () => {
   const { data: items = [] } = useNavbar();
-
   //Mapping for items in left, center and right slot respectively
   const leftItems = items.filter(item => item.position === 'left').sort(itemsByOrder);
   const centerItems = items.filter(item => item.position === 'center').sort(itemsByOrder);
