@@ -65,7 +65,7 @@ const RightSlot = styled('div')(({ theme }) => ({
 //Sorting the items within each container
 const itemsByOrder = (a: NavItem, b: NavItem) => a.order - b.order;
 
-//Adding 'component' props to GlobalButton to prevent compile error from TS
+//Adding 'component' props to GlobalButton to prevent compiling error from TS
 type GlobalButtonProps = ComponentProps<typeof GlobalButton> & { to: string };
 const WrappedGlobalButton = ({ to, children, ...buttonProps }: GlobalButtonProps) => (
   <Box component={RouterLink} to={to}>
@@ -81,7 +81,7 @@ const renderGlobalNavButton: React.FC<RenderGlobalNavButtonArgs> = args => {
   const {
     item,
     featureButtonHover,
-    openFeatureButtMeun,
+    openFeatureButtonMenu,
     awayFeatureButton,
     menuTimerRestart,
     keepMenuOpen,
@@ -120,7 +120,7 @@ const renderGlobalNavButton: React.FC<RenderGlobalNavButtonArgs> = args => {
           to={to}
           variant="text"
           sx={{ width: 90, ...(typographyByVariant(item.variant) || {}), color: 'text.secondary' }}
-          onPointerEnter={openFeatureButtMeun}
+          onPointerEnter={openFeatureButtonMenu}
           onPointerLeave={e => {
             const featureButton = e.relatedTarget instanceof Element ? e.relatedTarget : null;
             if (featureButton && featureMenuRef.current?.contains(featureButton)) return;
@@ -248,20 +248,20 @@ const Navbar = () => {
   const rightItems = items.filter(item => item.position === 'right').sort(itemsByOrder);
 
   //Seting state to see if point is on the feature button
-  const [featureButtonHover, setfeatureButtonHover] = useState<HTMLElement | null>(null);
+  const [featureButtonHover, setFeatureButtonHover] = useState<HTMLElement | null>(null);
 
   //Setting a reference layer for the presence of menu under feature button
   const featureMenuRef = useRef<HTMLDivElement>(null);
 
   //Function to trigger the pop-up of feature button menu
-  const openFeatureButtMeun = (e: React.MouseEvent<HTMLElement>) => {
+  const openFeatureButtonMenu = (e: React.MouseEvent<HTMLElement>) => {
     keepMenuOpen();
-    setfeatureButtonHover(e.currentTarget);
+    setFeatureButtonHover(e.currentTarget);
   };
 
   //Setting state to be null, when pointer is away from feature button
   const awayFeatureButton = () => {
-    setfeatureButtonHover(null);
+    setFeatureButtonHover(null);
   };
 
   const menuCloseTimer = useRef<number | null>(null);
@@ -269,7 +269,7 @@ const Navbar = () => {
   const menuTimerRestart = () => {
     if (menuCloseTimer.current) window.clearTimeout(menuCloseTimer.current);
     menuCloseTimer.current = window.setTimeout(() => {
-      setfeatureButtonHover(null);
+      setFeatureButtonHover(null);
     }, 200);
   };
 
@@ -290,7 +290,7 @@ const Navbar = () => {
     return renderGlobalNavButton({
       item,
       featureButtonHover,
-      openFeatureButtMeun,
+      openFeatureButtonMenu,
       awayFeatureButton,
       menuTimerRestart,
       keepMenuOpen,
