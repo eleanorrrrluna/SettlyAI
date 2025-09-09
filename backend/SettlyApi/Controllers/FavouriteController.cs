@@ -10,7 +10,7 @@ namespace SettlyApi.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    //validate the userId extracted from the JWT toker
+    //Validate the userId extracted from the JWT token.
     [UserIdFilter]
     public class FavouriteController : ControllerBase
     {
@@ -20,7 +20,16 @@ namespace SettlyApi.Controllers
         {
             _favouriteService = favouriteService;
         }
-        private int UserId => (int)HttpContext.Items[UserIdItemKeys.UserId]!;
+        private int UserId
+        {
+            get
+            {
+                if (HttpContext.Items.TryGetValue(UserIdItemKeys.UserId, out var v)&& v is int id)
+                {
+                    return id;
+                }
+                throw new UnauthorizedAccessException("UserId missing or invalid.");            }
+        }
         [HttpGet]
         [SwaggerOperation(Summary = "Get user favourites")]
         [SwaggerResponse(200, "Successfully retrieved favourites")]

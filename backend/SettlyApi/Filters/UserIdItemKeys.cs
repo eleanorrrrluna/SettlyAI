@@ -2,7 +2,7 @@ namespace SettlyApi.Filters
 {
     public static class UserIdItemKeys
     {
-        //key for storing the user's ID in HttpContext.Items
-        public const string UserId = "UserId";
+        //Key for storing the user's ID in HttpContext.Items
+        public static readonly object UserId = new object();
     }
 }
