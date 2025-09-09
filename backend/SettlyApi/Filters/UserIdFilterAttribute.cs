@@ -19,7 +19,7 @@ namespace SettlyApi.Filters
                 context.Result = new UnauthorizedResult();
                 return;
             }
-            context.HttpContext.Items["UserId"] = userId;
+            context.HttpContext.Items[UserIdItemKeys.UserId] = userId;
             base.OnActionExecuting(context);
         }
     }

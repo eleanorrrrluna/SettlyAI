@@ -3,7 +3,6 @@ using SettlyModels.Dtos;
 using ISettlyService;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using SettlyApi.Filters;
 
 namespace SettlyApi.Controllers
@@ -11,7 +10,7 @@ namespace SettlyApi.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    //validate the userId from the JWT toker
+    //validate the userId extracted from the JWT toker
     [UserIdFilter]
     public class FavouriteController : ControllerBase
     {
@@ -21,13 +20,13 @@ namespace SettlyApi.Controllers
         {
             _favouriteService = favouriteService;
         }
+        private int UserId => (int)HttpContext.Items[UserIdItemKeys.UserId]!;
         [HttpGet]
         [SwaggerOperation(Summary = "Get user favourites")]
         [SwaggerResponse(200, "Successfully retrieved favourites")]
         public async Task<IActionResult> GetFavourites()
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
-            var favourites = await _favouriteService.GetFavourites(userId);
+            var favourites = await _favouriteService.GetFavourites(UserId);
             return Ok(favourites);
         }
         [HttpPost("toggle")]
@@ -35,8 +34,7 @@ namespace SettlyApi.Controllers
         [SwaggerResponse(200, "Favourite toggled")]
         public async Task<IActionResult> ToggleFavourite([FromBody] AddFavouriteDto dto)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
-            var isSaved = await _favouriteService.ToggleFavouriteAsync(dto, userId);
+            var isSaved = await _favouriteService.ToggleFavouriteAsync(dto, UserId);
             return Ok(new
             {
                 isSaved,
@@ -48,8 +46,7 @@ namespace SettlyApi.Controllers
         [SwaggerResponse(200, "Successfully retrieved favourite")]
         public async Task<IActionResult> GetSingleFavourite([FromQuery] string targetType, [FromQuery] int targetId)
         {
-            var userId = (int)HttpContext.Items["UserId"]!;
-            var favourite = await _favouriteService.GetSingleFavouriteAsync(targetType, targetId, userId);
+            var favourite = await _favouriteService.GetSingleFavouriteAsync(targetType, targetId, UserId);
             if (favourite == null)
                 return Ok(new { isSaved = false });
             return Ok(new
