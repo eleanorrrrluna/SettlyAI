@@ -60,6 +60,8 @@ public class Program
         builder.Services.Configure<JWTConfig>(builder.Configuration.GetSection(JWTConfig.Section));
         var jwtConfig = builder.Configuration.GetSection(JWTConfig.Section).Get<JWTConfig>();
         builder.Services.AddJWT(jwtConfig);
+        // Register the custom filter with the DI container.
+        builder.Services.AddScoped<UserIdFilterAttribute>();
         // Add a Login rate-limiter policy: 5 requests per 15 minutes per client IP
         builder.Services.AddLoginLimitRater(attempts: 5, miniutes: 15);
 
