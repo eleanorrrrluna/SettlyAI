@@ -1,12 +1,11 @@
-import { useNavbar } from '@/api/navBarLayoutApi';
-import type { NavItem, NavVariant, RenderGlobalNavButtonArgs } from '@/features/navbar';
+import { type NavItem, type MenuItems, NAV_ITEMS } from '@/features/navbar';
 import { Link as RouterLink } from 'react-router-dom';
-import { AppBar, Typography, styled, Box, MenuItem, Popper, Paper } from '@mui/material';
-import theme from '@/styles/theme';
+import { AppBar, Typography, styled, Box } from '@mui/material';
 import GlobalButton from '../GlobalButton';
-import { useRef, useState, type ComponentProps } from 'react';
+import { useRef, useState } from 'react';
 import HomeRounded from '@mui/icons-material/HomeRounded';
-import React, { Fragment } from 'react';
+import React from 'react';
+import FeatureMenu from './components/FeatureMenu';
 
 //Setting up the containers
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -25,7 +24,7 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   },
 }));
 
-const LeftSlot = styled('div')(({ theme }) => ({
+const LeftContainer = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   flex: '1 1 0',
@@ -35,7 +34,7 @@ const LeftSlot = styled('div')(({ theme }) => ({
   },
 }));
 
-const CenterSlot = styled('div')(({ theme }) => ({
+const MiddleContainer = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(0),
@@ -47,7 +46,7 @@ const CenterSlot = styled('div')(({ theme }) => ({
   },
 }));
 
-const RightSlot = styled('div')(({ theme }) => ({
+const RightContainer = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(3),
@@ -62,256 +61,157 @@ const RightSlot = styled('div')(({ theme }) => ({
   },
 }));
 
-//Sorting the items within each container
-const itemsByOrder = (a: NavItem, b: NavItem) => a.order - b.order;
-
-//Adding 'component' props to GlobalButton to prevent compiling error from TS
-type GlobalButtonProps = ComponentProps<typeof GlobalButton> & { to: string };
-const WrappedGlobalButton = ({ to, children, ...buttonProps }: GlobalButtonProps) => (
-  <Box component={RouterLink} to={to}>
-    <GlobalButton {...buttonProps}>{children}</GlobalButton>
-  </Box>
+type GlobalButtonLinkProps = React.ComponentProps<typeof GlobalButton> & { to: string };
+const WrappedGlobalButton = React.forwardRef<HTMLButtonElement, GlobalButtonLinkProps>(
+  ({ to, className, children, ...props }, ref) => (
+    <GlobalButton ref={ref} className={className} component={RouterLink} to={to} {...props}>
+      {children}
+    </GlobalButton>
+  )
 );
 
-//Determine the typography type of button based on variant props from backend data
-const typographyByVariant = (variant?: NavVariant) => (variant === 'brand' ? theme.typography.h5 : theme.typography.p1);
-
-//Styling of each navbar item based on its varient
-const renderGlobalNavButton: React.FC<RenderGlobalNavButtonArgs> = args => {
-  const {
-    item,
-    featureButtonHover,
-    openFeatureButtonMenu,
-    awayFeatureButton,
-    menuTimerRestart,
-    keepMenuOpen,
-    featureMenuRef,
-  } = args;
-
-  const to = item.path;
-  const label = item.label ?? '';
-  const id = item.id;
-
-  //Setting a reference of the feature button width for its menu underneith
-  const featureButtonWidth = featureButtonHover ? featureButtonHover.getBoundingClientRect().width : undefined;
-
-  if (item.variant === 'link') {
-    return (
-      <WrappedGlobalButton
-        key={id}
-        to={to}
-        variant="text"
-        sx={{
-          width: 90,
-          ...typographyByVariant(item.variant),
-          color: 'text.secondary',
-        }}
-      >
-        {label}
-      </WrappedGlobalButton>
-    );
-  }
-
-  if (item.variant === 'menu') {
-    return (
-      <Fragment key={id}>
-        <WrappedGlobalButton
-          key={item.id}
-          to={to}
-          variant="text"
-          sx={theme => ({ width: 90, ...(typographyByVariant(item.variant) || {}), color: 'text.secondary' })}
-          onPointerEnter={openFeatureButtonMenu}
-          onPointerLeave={e => {
-            const featureButton = e.relatedTarget instanceof Element ? e.relatedTarget : null;
-            if (featureButton && featureMenuRef.current?.contains(featureButton)) return;
-            menuTimerRestart();
-          }}
-        >
-          {label}
-        </WrappedGlobalButton>
-
-        <Popper open={Boolean(featureButtonHover)} anchorEl={featureButtonHover}>
-          <Paper
-            ref={featureMenuRef}
-            onPointerEnter={keepMenuOpen}
-            onPointerLeave={e => {
-              const featureButton = e.relatedTarget instanceof Element ? e.relatedTarget : null;
-              if (featureButton && featureButtonHover?.contains(featureButton)) return;
-              menuTimerRestart();
-            }}
-            sx={theme => ({
-              minWidth: featureButtonWidth ?? undefined,
-            })}
-          >
-            {item.subItems?.map(subItem => (
-              <MenuItemRow key={subItem.id} component={RouterLink} to={subItem.path} onClick={awayFeatureButton}>
-                {subItem.label}
-              </MenuItemRow>
-            ))}
-          </Paper>
-        </Popper>
-      </Fragment>
-    );
-  }
-
-  if (item.variant === 'text') {
-    return (
-      <WrappedGlobalButton
-        key={id}
-        to={to}
-        variant="text"
-        width="100"
-        sx={theme => ({
-          width: 90,
-          borderRadius: 2,
-          [theme.breakpoints.down(400)]: {
-            width: '100%',
-            px: '2px',
-          },
-          ...typographyByVariant(item.variant),
-          color: 'text.secondary',
-          bgcolor: 'common.white',
-          boxShadow: 3,
-          whiteSpace: 'nowrap',
-        })}
-      >
-        {label}
-      </WrappedGlobalButton>
-    );
-  }
-
-  if (item.variant === 'contained') {
-    return (
-      <WrappedGlobalButton
-        key={id}
-        to={to}
-        variant="contained"
-        sx={theme => ({
-          width: 100,
-          boxShadow: 1,
-          [theme.breakpoints.down(400)]: {
-            width: '100%',
-            px: '2px',
-          },
-          ...typographyByVariant(item.variant),
-          borderRadius: 2,
-          whiteSpace: 'nowrap',
-        })}
-      >
-        {label}
-      </WrappedGlobalButton>
-    );
-  }
-  return null;
-};
-
-//Setting up styling for the menu item under feature button
-const MenuItemRow = styled(MenuItem)(({ theme }) => ({
+const LinkButton = styled(WrappedGlobalButton)(({ theme }) => ({
+  width: 90,
   ...theme.typography.p1,
   color: theme.palette.text.secondary,
 }));
 
-//Styling for Brand logo
-const BrandLogo = () => (
-  <Box
-    sx={theme => ({
-      width: 40,
-      height: 40,
-      borderRadius: '8px',
-      placeItems: 'center',
-      bgcolor: '#7B61FF',
-      display: 'grid',
-    })}
-  >
-    <HomeRounded sx={{ color: 'common.white' }} fontSize="medium" />
-  </Box>
-);
-const renderBrandLogo = (item: NavItem) => {
-  const id = item.id;
-  const label = item.label;
-  return (
-    <Typography
-      component={'span'}
-      key={id}
-      sx={theme => ({
-        ...typographyByVariant(item.variant),
-        color: 'text.primary',
-        lineHeight: theme => theme.typography.button.lineHeight,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-      })}
-    >
-      <BrandLogo />
-      {label}
-    </Typography>
-  );
-};
+const LoginButton = styled(WrappedGlobalButton)(({ theme }) => ({
+  width: 90,
+  borderRadius: 2,
+  [theme.breakpoints.down(400)]: {
+    width: '100%',
+    paddingLeft: theme.spacing(0.25),
+    paddingRight: theme.spacing(0.25),
+  },
+  ...theme.typography.p1,
+  color: theme.palette.text.secondary,
+  backgroundColor: theme.palette.common.white,
+  boxShadow: theme.shadows[3],
+  whiteSpace: 'nowrap',
+}));
+
+const JoinButton = styled(WrappedGlobalButton)(({ theme }) => ({
+  width: 100,
+  boxShadow: theme.shadows[1],
+  borderRadius: 2,
+  ...theme.typography.p1,
+  whiteSpace: 'nowrap',
+  backgroundColor: theme.palette.primary.main,
+  color: theme.palette.background.paper,
+  [theme.breakpoints.down(400)]: {
+    width: '100%',
+    paddingLeft: theme.spacing(0.25),
+    paddingRight: theme.spacing(0.25),
+  },
+}));
+
+const BrandMark = styled(Box)(({ theme }) => ({
+  width: 40,
+  height: 40,
+  borderRadius: 8,
+  placeItems: 'center',
+  backgroundColor: theme.palette.primary.main,
+  display: 'grid',
+  '& .MuiSvgIcon-root': {
+    color: theme.palette.common.white,
+    fontSize: theme.typography.pxToRem(24),
+  },
+}));
+
+const BrandLink = styled(Typography)(({ theme }) => ({
+  ...theme.typography.h5,
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(2),
+  textDecoration: 'none',
+  '&&:link, &&:visited, &&:hover, &&:active': {
+    color: 'inherit',
+    textDecoration: 'none',
+  },
+}));
 
 const Navbar = () => {
-  const { data: items = [] } = useNavbar();
-  //Mapping for items in left, center and right slot respectively
-  const leftItems = items.filter(item => item.position === 'left').sort(itemsByOrder);
-  const centerItems = items.filter(item => item.position === 'center').sort(itemsByOrder);
-  const rightItems = items.filter(item => item.position === 'right').sort(itemsByOrder);
-
-  //Seting state to see if point is on the feature button
+  const items: NavItem[] = NAV_ITEMS;
   const [featureButtonHover, setFeatureButtonHover] = useState<HTMLElement | null>(null);
-
-  //Setting a reference layer for the presence of menu under feature button
-  const featureMenuRef = useRef<HTMLDivElement>(null);
-
-  //Function to trigger the pop-up of feature button menu
   const openFeatureButtonMenu = (e: React.MouseEvent<HTMLElement>) => {
     keepMenuOpen();
     setFeatureButtonHover(e.currentTarget);
   };
-
-  //Setting state to be null, when pointer is away from feature button
-  const awayFeatureButton = () => {
-    setFeatureButtonHover(null);
-  };
-
   const menuCloseTimer = useRef<number | null>(null);
-  //Resetting state and timer when pointer is away from menu and feature button
   const menuTimerRestart = () => {
     if (menuCloseTimer.current) window.clearTimeout(menuCloseTimer.current);
     menuCloseTimer.current = window.setTimeout(() => {
       setFeatureButtonHover(null);
     }, 200);
   };
-
-  //keeping menu open when pointer is on feature button
   const keepMenuOpen = () => {
     if (menuCloseTimer.current) {
       window.clearTimeout(menuCloseTimer.current);
       menuCloseTimer.current = null;
     }
   };
+  const itemById = React.useMemo(() => new Map<string, NavItem>(items.map(item => [item.id, item] as const)), [items]);
+  const brandNameItem = itemById.get('brand');
+  const aboutItem = itemById.get('about');
+  const featureItem = itemById.get('features');
+  const askBotItem = itemById.get('ask-robot');
+  const favouritesItem = itemById.get('favourites');
+  const loginItem = itemById.get('login');
+  const joinItem = itemById.get('join');
 
-  //Rendering items based on styling functions above
-  const renderItem = (item: NavItem): React.ReactNode => {
-    //Rendering the brand logo (leftslot)
-    if (item.variant === 'brand') return renderBrandLogo(item);
+  const featureMenuItems: MenuItems[] = React.useMemo(
+    () => (featureItem?.subItems ?? []).map(({ id, label, path }) => ({ id, label, path, to: path })),
+    [featureItem]
+  );
 
-    //Rendering the remaining items in Navbar
-    return renderGlobalNavButton({
-      item,
-      featureButtonHover,
-      openFeatureButtonMenu,
-      awayFeatureButton,
-      menuTimerRestart,
-      keepMenuOpen,
-      featureMenuRef,
-    });
-  };
-
-  //Putting every rendered item in place
   return (
     <StyledAppBar position="static" color="transparent" elevation={0}>
-      <LeftSlot>{leftItems.map(renderItem)}</LeftSlot>
-      <CenterSlot>{centerItems.map(renderItem)}</CenterSlot>
-      <RightSlot>{rightItems.map(renderItem)}</RightSlot>
+      <LeftContainer>
+        <BrandLink component={RouterLink} to={brandNameItem?.path ?? '/'}>
+          <BrandMark>
+            <HomeRounded sx={{ color: 'common.white' }} fontSize="medium" />
+          </BrandMark>
+          {brandNameItem?.label}
+        </BrandLink>
+      </LeftContainer>
+
+      <MiddleContainer>
+        <LinkButton component={RouterLink} to={aboutItem?.path ?? '/about'}>
+          {aboutItem?.label}
+        </LinkButton>
+        <LinkButton
+          component={RouterLink}
+          to={featureItem?.path ?? '/features'}
+          onPointerEnter={openFeatureButtonMenu}
+          onPointerLeave={() => menuTimerRestart()}
+        >
+          {featureItem?.label}
+        </LinkButton>
+        <FeatureMenu
+          anchorEl={featureButtonHover}
+          open={Boolean(featureButtonHover)}
+          onEnter={keepMenuOpen}
+          onLeave={() => menuTimerRestart()}
+          onItemClick={() => setFeatureButtonHover(null)}
+          items={featureMenuItems}
+        />
+        <LinkButton component={RouterLink} to={askBotItem?.path ?? '/chat'}>
+          {askBotItem?.label}
+        </LinkButton>
+        <LinkButton component={RouterLink} to={favouritesItem?.path ?? '/favourites'}>
+          {favouritesItem?.label}
+        </LinkButton>
+      </MiddleContainer>
+
+      <RightContainer>
+        <LoginButton component={RouterLink} to={loginItem?.path ?? '/login'}>
+          {loginItem?.label}
+        </LoginButton>
+        <JoinButton component={RouterLink} to={joinItem?.path ?? '/registration'}>
+          {joinItem?.label}
+        </JoinButton>
+      </RightContainer>
     </StyledAppBar>
   );
 };
