@@ -61,6 +61,7 @@ const RightContainer = styled('div')(({ theme }) => ({
   },
 }));
 
+//Setting wrapper to add prop 'to' to the GlobalButton component
 type GlobalButtonLinkProps = React.ComponentProps<typeof GlobalButton> & { to: string };
 const WrappedGlobalButton = React.forwardRef<HTMLButtonElement, GlobalButtonLinkProps>(
   ({ to, className, children, ...props }, ref) => (
@@ -70,6 +71,7 @@ const WrappedGlobalButton = React.forwardRef<HTMLButtonElement, GlobalButtonLink
   )
 );
 
+//Styling for the buttons on NavBar
 const LinkButton = styled(WrappedGlobalButton)(({ theme }) => ({
   width: 90,
   ...theme.typography.p1,
@@ -133,6 +135,8 @@ const BrandLink = styled(Typography)(({ theme }) => ({
 
 const Navbar = () => {
   const items: NavItem[] = NAV_ITEMS;
+
+  //States/ handlers for the feature menu
   const [featureButtonHover, setFeatureButtonHover] = useState<HTMLElement | null>(null);
   const openFeatureButtonMenu = (e: React.MouseEvent<HTMLElement>) => {
     keepMenuOpen();
@@ -151,6 +155,8 @@ const Navbar = () => {
       menuCloseTimer.current = null;
     }
   };
+
+  //Identifing the items from data based on item.Id
   const itemById = React.useMemo(() => new Map<string, NavItem>(items.map(item => [item.id, item] as const)), [items]);
   const brandNameItem = itemById.get('brand');
   const aboutItem = itemById.get('about');
@@ -160,6 +166,7 @@ const Navbar = () => {
   const loginItem = itemById.get('login');
   const joinItem = itemById.get('join');
 
+  //Mapping the subitems in feature menu
   const featureMenuItems: MenuItems[] = React.useMemo(
     () => (featureItem?.subItems ?? []).map(({ id, label, path }) => ({ id, label, path, to: path })),
     [featureItem]

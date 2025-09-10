@@ -2,6 +2,7 @@ import { styled, MenuItem, Popper, Paper } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { FeatureMenuProps } from '@/features/navbar';
 
+//Styling for the feature menu
 const MenuItemRow = styled(MenuItem)(({ theme }) => ({
   ...theme.typography.p1,
   color: theme.palette.text.secondary,
@@ -12,7 +13,6 @@ const FeatureMenu = ({ anchorEl, open, onEnter, onLeave, onItemClick, items, min
     <div>
       <Popper open={open} anchorEl={anchorEl}>
         <Paper
-          //   ref={featureMenuRef}
           onPointerEnter={onEnter}
           onPointerLeave={e => {
             const featureButton = e.relatedTarget instanceof Element ? e.relatedTarget : null;
