@@ -114,6 +114,8 @@ const BrandMark = styled(Box)(({ theme }) => ({
   borderRadius: 8,
   placeItems: 'center',
   backgroundColor: theme.palette.primary.main,
+  color: theme.palette.common.white,
+  fontSize: 24,
   display: 'grid',
   '& .MuiSvgIcon-root': {
     color: theme.palette.common.white,
@@ -177,7 +179,7 @@ const Navbar = () => {
       <LeftContainer>
         <BrandLink component={RouterLink} to={brandNameItem?.path ?? '/'}>
           <BrandMark>
-            <HomeRounded sx={{ color: 'common.white' }} fontSize="medium" />
+            <HomeRounded fontSize="inherit" />
           </BrandMark>
           {brandNameItem?.label}
         </BrandLink>

@@ -8,6 +8,8 @@ const MenuItemRow = styled(MenuItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+const menuPaperStyle = (width?: number): React.CSSProperties => ({ minWidth: width });
+
 const FeatureMenu = ({ anchorEl, open, onEnter, onLeave, onItemClick, items, minWidth }: FeatureMenuProps) => {
   return (
     <div>
@@ -19,7 +21,7 @@ const FeatureMenu = ({ anchorEl, open, onEnter, onLeave, onItemClick, items, min
             if (featureButton && anchorEl?.contains(featureButton)) return;
             onLeave();
           }}
-          sx={{ minWidth }}
+          style={menuPaperStyle(minWidth)}
         >
           {items.map(Item => (
             <MenuItemRow key={Item.id} component={RouterLink} to={Item.to} onClick={onItemClick}>
