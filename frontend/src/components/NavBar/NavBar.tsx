@@ -1,11 +1,8 @@
-import { type NavItem, type MenuItems, NAV_ITEMS } from '@/features/navbar';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppBar, Typography, styled, Box } from '@mui/material';
 import GlobalButton from '../GlobalButton';
-import { useRef, useState } from 'react';
 import HomeRounded from '@mui/icons-material/HomeRounded';
 import React from 'react';
-import FeatureMenu from './components/FeatureMenu';
 
 //Setting up the containers
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -52,7 +49,7 @@ const RightContainer = styled('div')(({ theme }) => ({
   gap: theme.spacing(3),
   flex: '0 0 auto',
   marginLeft: theme.spacing(3),
-  paddingRight: theme.spacing(4),
+  paddingRight: theme.spacing(6),
   [theme.breakpoints.down(400)]: {
     flexDirection: 'column',
     alignItems: 'stretch',
@@ -80,7 +77,7 @@ const LinkButton = styled(WrappedGlobalButton)(({ theme }) => ({
 
 const LoginButton = styled(WrappedGlobalButton)(({ theme }) => ({
   width: 90,
-  borderRadius: 2,
+  '&&': { borderRadius: 8 },
   [theme.breakpoints.down(400)]: {
     width: '100%',
     paddingLeft: theme.spacing(0.25),
@@ -96,7 +93,7 @@ const LoginButton = styled(WrappedGlobalButton)(({ theme }) => ({
 const JoinButton = styled(WrappedGlobalButton)(({ theme }) => ({
   width: 100,
   boxShadow: theme.shadows[1],
-  borderRadius: 2,
+  '&&': { borderRadius: 8 },
   ...theme.typography.p1,
   whiteSpace: 'nowrap',
   backgroundColor: theme.palette.primary.main,
@@ -129,96 +126,44 @@ const BrandLink = styled(Typography)(({ theme }) => ({
   alignItems: 'center',
   gap: theme.spacing(2),
   textDecoration: 'none',
-  '&&:link, &&:visited, &&:hover, &&:active': {
-    color: 'inherit',
-    textDecoration: 'none',
-  },
+  whiteSpace: 'nowrap',
+  color: 'inherit',
 }));
 
 const Navbar = () => {
-  const items: NavItem[] = NAV_ITEMS;
-
-  //States/ handlers for the feature menu
-  const [featureButtonHover, setFeatureButtonHover] = useState<HTMLElement | null>(null);
-  const openFeatureButtonMenu = (e: React.MouseEvent<HTMLElement>) => {
-    keepMenuOpen();
-    setFeatureButtonHover(e.currentTarget);
-  };
-  const menuCloseTimer = useRef<number | null>(null);
-  const menuTimerRestart = () => {
-    if (menuCloseTimer.current) window.clearTimeout(menuCloseTimer.current);
-    menuCloseTimer.current = window.setTimeout(() => {
-      setFeatureButtonHover(null);
-    }, 200);
-  };
-  const keepMenuOpen = () => {
-    if (menuCloseTimer.current) {
-      window.clearTimeout(menuCloseTimer.current);
-      menuCloseTimer.current = null;
-    }
-  };
-
-  //Identifing the items from data based on item.Id
-  const itemById = React.useMemo(() => new Map<string, NavItem>(items.map(item => [item.id, item] as const)), [items]);
-  const brandNameItem = itemById.get('brand');
-  const aboutItem = itemById.get('about');
-  const featureItem = itemById.get('features');
-  const askBotItem = itemById.get('ask-robot');
-  const favouritesItem = itemById.get('favourites');
-  const loginItem = itemById.get('login');
-  const joinItem = itemById.get('join');
-
-  //Mapping the subitems in feature menu
-  const featureMenuItems: MenuItems[] = React.useMemo(
-    () => (featureItem?.subItems ?? []).map(({ id, label, path }) => ({ id, label, path, to: path })),
-    [featureItem]
-  );
-
   return (
     <StyledAppBar position="static" color="transparent" elevation={0}>
       <LeftContainer>
-        <BrandLink component={RouterLink} to={brandNameItem?.path ?? '/'}>
+        <BrandLink component={RouterLink} to={'/'}>
           <BrandMark>
             <HomeRounded fontSize="inherit" />
           </BrandMark>
-          {brandNameItem?.label}
+          Settly AI
         </BrandLink>
       </LeftContainer>
 
       <MiddleContainer>
-        <LinkButton component={RouterLink} to={aboutItem?.path ?? '/about'}>
-          {aboutItem?.label}
+        <LinkButton component={RouterLink} to={'/about'}>
+          About
         </LinkButton>
-        <LinkButton
-          component={RouterLink}
-          to={featureItem?.path ?? '/features'}
-          onPointerEnter={openFeatureButtonMenu}
-          onPointerLeave={() => menuTimerRestart()}
-        >
-          {featureItem?.label}
+        <LinkButton component={RouterLink} to={'/features'}>
+          Features
         </LinkButton>
-        <FeatureMenu
-          anchorEl={featureButtonHover}
-          open={Boolean(featureButtonHover)}
-          onEnter={keepMenuOpen}
-          onLeave={() => menuTimerRestart()}
-          onItemClick={() => setFeatureButtonHover(null)}
-          items={featureMenuItems}
-        />
-        <LinkButton component={RouterLink} to={askBotItem?.path ?? '/chat'}>
-          {askBotItem?.label}
+
+        <LinkButton component={RouterLink} to={'/chat'}>
+          Ask Robot
         </LinkButton>
-        <LinkButton component={RouterLink} to={favouritesItem?.path ?? '/favourites'}>
-          {favouritesItem?.label}
+        <LinkButton component={RouterLink} to={'/favourites'}>
+          Favourites
         </LinkButton>
       </MiddleContainer>
 
       <RightContainer>
-        <LoginButton component={RouterLink} to={loginItem?.path ?? '/login'}>
-          {loginItem?.label}
+        <LoginButton component={RouterLink} to={'/login'}>
+          Login
         </LoginButton>
-        <JoinButton component={RouterLink} to={joinItem?.path ?? '/registration'}>
-          {joinItem?.label}
+        <JoinButton component={RouterLink} to={'/registration'}>
+          Join
         </JoinButton>
       </RightContainer>
     </StyledAppBar>
