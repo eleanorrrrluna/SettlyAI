@@ -18,8 +18,7 @@ public class Program
                 .AddEnvironmentVariables()
                 .Build();
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection") 
-                ?? configuration.GetSection("ApiConfigs:DBConnection").Value;
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
 
             if (string.IsNullOrEmpty(connectionString))
             {
