@@ -6,6 +6,7 @@ using SettlyApi.Filters;
 using SettlyApi.Middlewares;
 using SettlyModels;
 using SettlyService;
+using Prometheus;
 
 
 namespace SettlyApi;
@@ -80,6 +81,8 @@ public class Program
         app.UseAuthorization();
         app.MapControllers();
         Console.WriteLine("Starting SettlyAI API server...");
+        app.UseHttpMetrics();
+        app.MapMetrics();
         app.Run();
     }
 }
