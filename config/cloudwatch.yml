@@ -1,0 +1,36 @@
+region: ap-southeast-2
+delay_seconds: 600
+period_seconds: 60
+metrics:
+  - aws_namespace: CWAgent
+    aws_metric_name: cpu_usage_active
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Average]
+  - aws_namespace: CWAgent
+    aws_metric_name: mem_used_percent
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Average]
+  - aws_namespace: CWAgent
+    aws_metric_name: disk_used_percent
+    aws_dimensions: [InstanceId, path]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: CPUUtilization
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkIn
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkOut
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: DiskReadBytes
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: DiskWriteBytes
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Sum]
