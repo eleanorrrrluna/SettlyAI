@@ -1,0 +1,62 @@
+services:
+  # SettlyAI 应用容器（改成你自己的镜像）
+  settlyapi:
+    image: 400071841390.dkr.ecr.ap-southeast-2.amazonaws.com/settlyai-backend   # ⬅️ 改成你自己的镜像uri
+    container_name: settlyapi
+    ports:
+      - "5100:5100"
+    environment:
+      - ASPNETCORE_URLS=http://+:5100
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-southeast-2         # ⬅️ 改成你部署的 AWS 区域
+        awslogs-group: /settly/settlyapi       # ⬅️ CloudWatch 日志组名，可自定义
+        awslogs-stream: app-{hostname}
+
+  # CloudWatch Agent（收集指标）
+  cw-agent:
+    image: amazon/cloudwatch-agent:latest
+    container_name: cw-agent
+    volumes:
+      - ./config/amazon-cloudwatch-agent.json:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    command: ["-config", "/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"]
+    restart: always
+    depends_on:
+      - settlyapi
+
+  # CloudWatch Exporter（把 CloudWatch 指标暴露成 Prometheus 格式）
+  cw-exporter:
+    image: quay.io/prometheus/cloudwatch-exporter:latest
+    container_name: cw-exporter
+    ports:
+      - "9106:9106"
+    volumes:
+      - ./config/cloudwatch.yml:/config/config.yml
+    command: ["/config/config.yml"]
+    restart: always
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - cw-exporter
+    restart: always
+
+  # Grafana（默认用户名 admin / 密码见下面环境变量）
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=MyStrongP@ss   # ⬅️ 这里改成你自己的强密码
+    depends_on:
+      - prometheus
+    restart: always

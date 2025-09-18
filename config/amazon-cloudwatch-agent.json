@@ -1,0 +1,24 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "region": "ap-southeast-2"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "cpu": { "measurement": ["usage_active"] },
+      "mem": { "measurement": ["used_percent"] },
+      "disk": {
+        "resources": ["*"],
+        "measurement": ["used_percent"]
+      },
+      "net": {
+        "resources": ["*"],
+        "measurement": ["bytes_sent","bytes_recv"]
+      }
+    }
+  }
+}
